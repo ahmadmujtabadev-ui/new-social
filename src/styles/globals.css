@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* globals.css (or anywhere global) */
+:root{
+  --gold: #f4c63f;
+  --ink: #0e0f10;
+  --navy-900: #0d1327;
+  --navy-800: #131c3a;
+  --navy-700: #1b2857;
+  --canvas: #f7f9fc;
+  --surface: #ffffff;
+  --text-strong: #0f1235;
+  --text-muted: #667085;
+}
+
+/* helpful utilities */
+.bg-canvas{ background: var(--canvas); }
+.bg-hero{
+  background: linear-gradient(180deg, var(--ink) 0%, var(--blue) 55%, var(--ink) 100%);
+}
+.btn-gold{
+  background: var(--gold); color: var(--ink);
+  border-radius: 999px; font-weight: 800; padding: 14px 28px;
+  box-shadow: 0 15px 40px color-mix(in oklab, var(--gold) 40%, transparent);
+  transition: .25s ease;
+}
+.btn-gold:hover{
+  background: transparent; color: var(--gold);
+  border: 3px solid var(--gold); transform: translateY(-2px) scale(1.03);
+}
+.card{
+  background: var(--surface);
+  border: 1px solid rgba(var(--border)/.08);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(16,24,40,.08);
+}
+.heading{ color: var(--text-strong); }
+.body{ color: var(--text-muted); }
+.badge{
+  color: var(--gold);
+  background: color-mix(in oklab,var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in oklab,var(--gold) 45%, transparent);
+  border-radius: 24px; padding: 8px 14px; font-weight: 600;
+}
