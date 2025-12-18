@@ -1,5 +1,5 @@
 // hooks/useFormState.ts
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { VendorFormData, Errors } from '@/constants/vendorTypes';
 import { Category, EMPTY } from '@/constants/types';
 import { BOOTH_KEY, DEFAULT_PRICING, DRAFT_KEY } from '@/lib/vendorformconfig';
@@ -10,7 +10,11 @@ export const useFormState = () => {
     
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
+      console.log("raw 13", raw)
+
       const draft = raw ? (JSON.parse(raw) as Partial<VendorFormData>) : {};
+
+      console.log("draft", draft)
       
       // Ensure proper type for isOakville
       const isOakvilleValue = draft.isOakville;
@@ -36,29 +40,29 @@ export const useFormState = () => {
 
   const [errors, setErrors] = useState<Errors>({});
 
-  // Auto-save draft to localStorage
-  useEffect(() => {
-    try {
-      const serializable: Omit<
-        VendorFormData,
-        | 'businessLogo'
-        | 'foodPhotos'
-        | 'clothingPhotos'
-        | 'jewelryPhotos'
-        | 'craftPhotos'
-      > & Record<string, unknown> = { ...formData };
+  // // Auto-save draft to localStorage
+  // useEffect(() => {
+  //   try {
+  //     const serializable: Omit<
+  //       VendorFormData,
+  //       | 'businessLogo'
+  //       | 'foodPhotos'
+  //       | 'clothingPhotos'
+  //       | 'jewelryPhotos'
+  //       | 'craftPhotos'
+  //     > & Record<string, unknown> = { ...formData };
       
-      delete serializable.businessLogo;
-      delete serializable.foodPhotos;
-      delete serializable.clothingPhotos;
-      delete serializable.jewelryPhotos;
-      delete serializable.craftPhotos;
+  //     delete serializable.businessLogo;
+  //     delete serializable.foodPhotos;
+  //     delete serializable.clothingPhotos;
+  //     delete serializable.jewelryPhotos;
+  //     delete serializable.craftPhotos;
       
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(serializable));
-    } catch {
-      return;
-    }
-  }, [formData]);
+  //     localStorage.setItem(DRAFT_KEY, JSON.stringify(serializable));
+  //   } catch {
+  //     return;
+  //   }
+  // }, [formData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>

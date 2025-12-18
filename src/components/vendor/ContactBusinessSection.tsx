@@ -1,26 +1,40 @@
-import { Errors, VendorFormData } from "@/constants/vendorTypes";
+// components/vendor/ContactBusinessSection.tsx
 import React from "react";
+import { FormikErrors, FormikTouched } from "formik";
+import { Field } from "formik";
 
-type Props = {
-  formData: VendorFormData;
-  errors: Errors;
-  onChange: (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => void;
-  onFileChange: (
-    name: keyof VendorFormData,
-    files: FileList | null,
-    multiple?: boolean
-  ) => void;
-};
+interface VendorFormValues {
+  personName: string;
+  vendorName: string;
+  email: string;
+  phone: string;
+  isOakville: "" | "yes" | "no";
+  selectedEvent: string;
+  businessLogo: File | null;
+  instagram: string;
+  facebook: string;
+  [key: string]: any;
+}
+
+interface Props {
+  values: VendorFormValues;
+  errors: FormikErrors<VendorFormValues>;
+  touched: FormikTouched<VendorFormValues>;
+  setFieldValue: (field: string, value: any) => void;
+}
+
+const EVENT_OPTIONS = [
+  { value: "participating", label: "Participating" },
+  { value: "sponsoring", label: "Sponsoring" },
+  { value: "volunteering", label: "Volunteering" },
+  { value: "setting_stall", label: "Setting Stall" },
+];
 
 const ContactBusinessSection: React.FC<Props> = ({
-  formData,
+  values,
   errors,
-  onChange,
-  onFileChange,
+  touched,
+  setFieldValue,
 }) => {
   return (
     <>
@@ -33,23 +47,52 @@ const ContactBusinessSection: React.FC<Props> = ({
         </h2>
       </div>
 
+      {/* Select Event */}
+      <div className="mb-6">
+        <label className="block text-[#f0b400] text-sm font-bold mb-2">
+          Select Event *
+        </label>
+        <Field
+          as="select"
+          name="selectedEvent"
+          className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
+            errors.selectedEvent && touched.selectedEvent
+              ? "border-red-500"
+              : "border-[#f0b400] focus:border-[#f0b400]"
+          }`}
+        >
+          <option value="">Select the event you are interested in…</option>
+          {EVENT_OPTIONS.map((event) => (
+            <option key={event.value} value={event.value}>
+              {event.label}
+            </option>
+          ))}
+        </Field>
+        {errors.selectedEvent && touched.selectedEvent && (
+          <p className="text-red-500 text-xs font-semibold mt-1.5">
+            {errors.selectedEvent}
+          </p>
+        )}
+        <p className="text-[#f0b400]/70 text-xs mt-1.5">
+          Choose how you want to be involved in the event
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div>
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Person Name *
           </label>
-          <input
+          <Field
             name="personName"
-            value={formData.personName}
-            onChange={onChange}
             placeholder="Your full name"
             className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-              errors.personName
+              errors.personName && touched.personName
                 ? "border-red-500"
                 : "border-[#f0b400] focus:border-[#f0b400]"
             }`}
           />
-          {errors.personName && (
+          {errors.personName && touched.personName && (
             <p className="text-red-500 text-xs font-semibold mt-1.5">
               {errors.personName}
             </p>
@@ -60,18 +103,16 @@ const ContactBusinessSection: React.FC<Props> = ({
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Vendor Name *
           </label>
-          <input
+          <Field
             name="vendorName"
-            value={formData.vendorName}
-            onChange={onChange}
             placeholder="Business name"
             className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-              errors.vendorName
+              errors.vendorName && touched.vendorName
                 ? "border-red-500"
                 : "border-[#f0b400] focus:border-[#f0b400]"
             }`}
           />
-          {errors.vendorName && (
+          {errors.vendorName && touched.vendorName && (
             <p className="text-red-500 text-xs font-semibold mt-1.5">
               {errors.vendorName}
             </p>
@@ -82,19 +123,17 @@ const ContactBusinessSection: React.FC<Props> = ({
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Email Address *
           </label>
-          <input
+          <Field
             type="email"
             name="email"
-            value={formData.email}
-            onChange={onChange}
             placeholder="you@example.com"
             className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-              errors.email
+              errors.email && touched.email
                 ? "border-red-500"
                 : "border-[#f0b400] focus:border-[#f0b400]"
             }`}
           />
-          {errors.email && (
+          {errors.email && touched.email && (
             <p className="text-red-500 text-xs font-semibold mt-1.5">
               {errors.email}
             </p>
@@ -105,21 +144,19 @@ const ContactBusinessSection: React.FC<Props> = ({
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Phone Number *
           </label>
-          <input
+          <Field
             name="phone"
             type="tel"
             inputMode="numeric"
             maxLength={11}
-            value={formData.phone}
-            onChange={onChange}
             placeholder="1 (___) ___-____"
             className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-              errors.phone
+              errors.phone && touched.phone
                 ? "border-red-500"
                 : "border-[#f0b400] focus:border-[#f0b400]"
             }`}
           />
-          {errors.phone && (
+          {errors.phone && touched.phone && (
             <p className="text-red-500 text-xs font-semibold mt-1.5">
               {errors.phone}
             </p>
@@ -130,12 +167,11 @@ const ContactBusinessSection: React.FC<Props> = ({
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Is the business Oakville-based? *
           </label>
-          <select
+          <Field
+            as="select"
             name="isOakville"
-            value={formData.isOakville}
-            onChange={onChange}
             className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
-              errors.isOakville
+              errors.isOakville && touched.isOakville
                 ? "border-red-500"
                 : "border-[#f0b400] focus:border-[#f0b400]"
             }`}
@@ -143,8 +179,8 @@ const ContactBusinessSection: React.FC<Props> = ({
             <option value="">Select…</option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
-          </select>
-          {errors.isOakville && (
+          </Field>
+          {errors.isOakville && touched.isOakville && (
             <p className="text-red-500 text-xs font-semibold mt-1.5">
               {errors.isOakville}
             </p>
@@ -158,9 +194,17 @@ const ContactBusinessSection: React.FC<Props> = ({
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => onFileChange("businessLogo", e.target.files)}
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setFieldValue("businessLogo", file);
+            }}
             className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f0b400] file:text-black hover:file:bg-yellow-500"
           />
+          {values.businessLogo && (
+            <p className="text-emerald-400 text-xs mt-1.5">
+              Selected: {values.businessLogo.name}
+            </p>
+          )}
         </div>
       </div>
 
@@ -169,10 +213,8 @@ const ContactBusinessSection: React.FC<Props> = ({
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Instagram
           </label>
-          <input
+          <Field
             name="instagram"
-            value={formData.instagram}
-            onChange={onChange}
             placeholder="@handle"
             className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl outline-none focus:border-[#f0b400] transition"
           />
@@ -184,10 +226,8 @@ const ContactBusinessSection: React.FC<Props> = ({
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Facebook
           </label>
-          <input
+          <Field
             name="facebook"
-            value={formData.facebook}
-            onChange={onChange}
             placeholder="facebook.com/yourpage"
             className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl outline-none focus:border-[#f0b400] transition"
           />

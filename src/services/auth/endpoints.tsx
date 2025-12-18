@@ -3,11 +3,11 @@ import { HttpService } from "../index";
 class FormsBaseService extends HttpService {
   // 👇 CRITICAL FIX: Changed "api/v1/..." to "api/forms/..."
   // Also ensured singular/plural matches your backend routes
-  private readonly vendorPrefix: string = "api/forms/vendor";
-  private readonly sponsorPrefix: string = "api/forms/sponsor";
-  private readonly participantPrefix: string = "api/forms/participant";
-  private readonly volunteerPrefix: string = "api/forms/volunteer";
-
+  private readonly vendorPrefix: string = "api/v1/vendor";
+  private readonly sponsorPrefix: string = "api/v1/sponsor";
+  private readonly participantPrefix: string = "api/v1/participant";
+  private readonly volunteerPrefix: string = "api/v1/volunteer";
+// /api/v1/vendor
   /**
    * Vendor Submit API
    * @param data

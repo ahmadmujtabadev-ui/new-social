@@ -1,31 +1,130 @@
-
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import ls from "localstorage-slim";
 import { HttpService } from "../index";
 import { authBaseService } from "./endpoints";
-import { API_BASE_URL } from "@/config/apiconfig"; 
+
+interface VendorFormData {
+  personName: string;
+  vendorName: string;
+  email: string;
+  phone: string;
+  isOakville: string;
+  selectedEvent: string;
+  businessLogo: File | null;
+  instagram: string;
+  facebook: string;
+  category: string;
+  foodItems: string;
+  needPowerFood: string;
+  foodWatts: string;
+  foodPhotos: File[];
+  clothingType: string;
+  clothingPhotos: File[];
+  jewelryType: string;
+  jewelryPhotos: File[];
+  craftDetails: string;
+  needPowerCraft: string;
+  craftWatts: string;
+  craftPhotos: File[];
+  boothNumber: string;
+  notes: string;
+  terms: boolean;
+}
 
 export const submitVendorAsync = createAsyncThunk(
   "forms/vendor/submit",
-  async (formData: FormData, { rejectWithValue }) => {
+  async (data: VendorFormData, { rejectWithValue }) => {
     try {
-      // ✅ CORRECT: Uses imported variable and backticks
-      const response = await fetch(`${API_BASE_URL}/api/forms/vendor`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        return rejectWithValue(
-          errorData || { message: "Failed to submit vendor form" }
-        );
+      // Set authentication token
+      const token = ls.get("access_token", { decrypt: true }) as string;
+      if (token) {
+        HttpService.setToken(token);
       }
 
-      const result = await response.json();
-      return result;
+      // Create FormData and append all fields
+      const formData = new FormData();
+
+      // Append text fields
+      const textFields: (keyof VendorFormData)[] = [
+        'personName',
+        'vendorName',
+        'email',
+        'phone',
+        'isOakville',
+        'selectedEvent',
+        'instagram',
+        'facebook',
+        'category',
+        'foodItems',
+        'needPowerFood',
+        'foodWatts',
+        'clothingType',
+        'jewelryType',
+        'craftDetails',
+        'needPowerCraft',
+        'craftWatts',
+        'boothNumber',
+        'notes',
+      ];
+
+      textFields.forEach((field) => {
+        const value = data[field];
+        if (value !== null && value !== undefined && value !== '') {
+          formData.append(field, String(value));
+        }
+      });
+
+      // Append terms as string
+      formData.append('terms', String(data.terms));
+
+      // Append single file (businessLogo)
+      if (data.businessLogo instanceof File) {
+        formData.append('businessLogo', data.businessLogo);
+      }
+
+      // Append multiple files with proper array notation
+      const fileArrayFields: { key: keyof VendorFormData; name: string }[] = [
+        { key: 'foodPhotos', name: 'foodPhotos' },
+        { key: 'clothingPhotos', name: 'clothingPhotos' },
+        { key: 'jewelryPhotos', name: 'jewelryPhotos' },
+        { key: 'craftPhotos', name: 'craftPhotos' },
+      ];
+
+      fileArrayFields.forEach(({ key, name }) => {
+        const files = data[key];
+        if (Array.isArray(files)) {
+          files.forEach((file) => {
+            if (file instanceof File) {
+              // Append with array notation for backend processing
+              formData.append(`${name}[]`, file);
+            }
+          });
+        }
+      });
+
+      // Log FormData contents for debugging
+      console.log('FormData contents:');
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, value.name, value.size, 'bytes');
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+
+      // Submit to backend
+      const response = await authBaseService.submitVendor(formData);
+
+      // Handle response
+      if (response.data?.success === false) {
+        return rejectWithValue(response.data);
+      }
+
+      return response.data;
     } catch (error: any) {
+      console.error('Submit vendor error:', error);
+      
       if (error.response?.data) {
         return rejectWithValue(error.response.data);
       } else if (error.message) {
@@ -36,9 +135,6 @@ export const submitVendorAsync = createAsyncThunk(
     }
   }
 );
-
-
-
 export const submitSponsorAsync = createAsyncThunk(
   "forms/sponsor/submit",
   async (data: any, { rejectWithValue }) => {
@@ -49,7 +145,7 @@ export const submitSponsorAsync = createAsyncThunk(
       }
 
       const formData = new FormData();
-
+      
       Object.entries(data).forEach(([key, value]) => {
         if (value instanceof File) {
           formData.append(key, value);
@@ -59,7 +155,7 @@ export const submitSponsorAsync = createAsyncThunk(
       });
 
       const response = await authBaseService.submitSponsor(formData);
-
+      
       if (response.data?.success === false) {
         return rejectWithValue(response.data);
       }
@@ -81,59 +177,57 @@ export const submitParticipantAsync = createAsyncThunk(
   "forms/participant/submit",
   async (data: any, { rejectWithValue }) => {
     try {
-      // ✅ CORRECT: Uses imported variable
-      const res = await fetch(`${API_BASE_URL}/api/forms/participant`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        return rejectWithValue(json);
+      const token: string = `${ls.get("access_token", { decrypt: true })}`;
+      if (token) {
+        HttpService.setToken(token);
       }
-      return json;
-    } catch (err: any) {
-      return rejectWithValue({ message: err.message || "Network error" });
+
+      const response = await authBaseService.submitParticipant(data);
+      
+      if (response.data?.success === false) {
+        return rejectWithValue(response.data);
+      }
+
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        return rejectWithValue(error.response.data);
+      } else if (error.message) {
+        return rejectWithValue({ message: error.message });
+      } else {
+        return rejectWithValue({ message: "An unexpected error occurred" });
+      }
     }
   }
 );
-
 
 export const submitVolunteerAsync = createAsyncThunk(
   "forms/volunteer/submit",
   async (data: any, { rejectWithValue }) => {
     try {
-      // 👇 FIXED: Removed the complex/broken fallback logic.
-      // Now uses API_BASE_URL directly like the others.
-      const res = await fetch(`${API_BASE_URL}/api/forms/volunteer`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        return rejectWithValue(
-          json || { message: "Failed to submit volunteer form" }
-        );
+      const token: string = `${ls.get("access_token", { decrypt: true })}`;
+      if (token) {
+        HttpService.setToken(token);
       }
 
+      const response = await authBaseService.submitVolunteer(data);
+      
+      if (response.data?.success === false) {
+        return rejectWithValue(response.data);
+      }
 
-      return json;
+      return response.data;
     } catch (error: any) {
-      console.error("Volunteer submit error:", error);
-      if (error?.message) {
+      if (error.response?.data) {
+        return rejectWithValue(error.response.data);
+      } else if (error.message) {
         return rejectWithValue({ message: error.message });
+      } else {
+        return rejectWithValue({ message: "An unexpected error occurred" });
       }
-      return rejectWithValue({ message: "An unexpected error occurred" });
     }
   }
 );
-
 
 export const fetchSponsorsAsync = createAsyncThunk(
   "forms/sponsor/fetch",

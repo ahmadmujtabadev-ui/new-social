@@ -1,5 +1,5 @@
 import { Category } from "@/constants/types";
-import { PromoType, VendorFormData } from "@/constants/vendorTypes";
+import { PromoType } from "@/constants/vendorTypes";
 
 
 export const STORAGE_VERSION = "v1";
@@ -21,7 +21,7 @@ export const DEFAULT_PRICING: Record<Category, number> = {
   "Craft Booth": 350,
 };
 
-export const EMPTY: VendorFormData = {
+export const EMPTY: any = {
   personName: "",
   vendorName: "",
   email: "",

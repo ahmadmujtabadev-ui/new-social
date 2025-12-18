@@ -1,29 +1,41 @@
-import { Errors, VendorFormData } from "@/constants/vendorTypes";
-import { CATEGORY_OPTIONS } from "@/lib/vendorformconfig";
+// =============================================================================
+// components/vendor/CategorySection.tsx
+// =============================================================================
+
 import React from "react";
+import { FormikErrors, FormikTouched, Field } from "formik";
 
+const CATEGORY_OPTIONS = ["Food Vendor", "Clothing Vendor", "Jewelry Vendor", "Craft Booth"];
 
-type Props = {
-  formData: VendorFormData;
-  errors: Errors;
-  onChange: (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => void;
-  onFileChange: (
-    name: keyof VendorFormData,
-    files: FileList | null,
-    multiple?: boolean
-  ) => void;
-};
+interface CategorySectionProps {
+  values: any;
+  errors: FormikErrors<any>;
+  touched: FormikTouched<any>;
+  setFieldValue: (field: string, value: any) => void;
+}
 
-const CategorySection: React.FC<Props> = ({
-  formData,
+const CategorySection: React.FC<CategorySectionProps> = ({
+  values,
   errors,
-  onChange,
-  onFileChange,
+  touched,
+  setFieldValue,
 }) => {
+  const handleMultiFileChange = (fieldName: string, files: FileList | null) => {
+    if (!files) {
+      setFieldValue(fieldName, []);
+      return;
+    }
+    setFieldValue(fieldName, Array.from(files));
+  };
+
+  // Helper function to safely render error messages
+  const getErrorMessage = (error: string | string[] | FormikErrors<any> | FormikErrors<any>[] | undefined): string => {
+    if (typeof error === 'string') {
+      return error;
+    }
+    return '';
+  };
+
   return (
     <>
       <div className="flex items-center gap-3 mb-6">
@@ -36,12 +48,11 @@ const CategorySection: React.FC<Props> = ({
       </div>
 
       <div className="mb-6">
-        <select
+        <Field
+          as="select"
           name="category"
-          value={formData.category}
-          onChange={onChange}
           className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
-            errors.category
+            errors.category && touched.category
               ? "border-red-500"
               : "border-[#f0b400] focus:border-[#f0b400]"
           }`}
@@ -52,34 +63,32 @@ const CategorySection: React.FC<Props> = ({
               {c}
             </option>
           ))}
-        </select>
-        {errors.category && (
+        </Field>
+        {errors.category && touched.category && (
           <p className="text-red-500 text-xs font-semibold mt-1.5">
-            {errors.category}
+            {getErrorMessage(errors.category)}
           </p>
         )}
       </div>
 
-      {formData.category === "Food Vendor" && (
+      {values.category === "Food Vendor" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-[#f0b400] text-sm font-bold mb-2">
               What are you planning to sell? (Max 2 items) *
             </label>
-            <input
+            <Field
               name="foodItems"
-              value={formData.foodItems}
-              onChange={onChange}
               placeholder="e.g., Samosas, Chaat"
               className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-                errors.foodItems
+                errors.foodItems && touched.foodItems
                   ? "border-red-500"
                   : "border-[#f0b400] focus:border-[#f0b400]"
               }`}
             />
-            {errors.foodItems && (
+            {errors.foodItems && touched.foodItems && (
               <p className="text-red-500 text-xs font-semibold mt-1.5">
-                {errors.foodItems}
+                {getErrorMessage(errors.foodItems)}
               </p>
             )}
           </div>
@@ -92,21 +101,25 @@ const CategorySection: React.FC<Props> = ({
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) => onFileChange("foodPhotos", e.target.files, true)}
+              onChange={(e) => handleMultiFileChange("foodPhotos", e.target.files)}
               className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f0b400] file:text-black hover:file:bg-yellow-500"
             />
+            {values.foodPhotos.length > 0 && (
+              <p className="text-emerald-400 text-xs mt-1.5">
+                {values.foodPhotos.length} file(s) selected
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-[#f0b400] text-sm font-bold mb-2">
               Do you need a power outlet? *
             </label>
-            <select
+            <Field
+              as="select"
               name="needPowerFood"
-              value={formData.needPowerFood}
-              onChange={onChange}
               className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
-                errors.needPowerFood
+                errors.needPowerFood && touched.needPowerFood
                   ? "border-red-500"
                   : "border-[#f0b400] focus:border-[#f0b400]"
               }`}
@@ -114,33 +127,31 @@ const CategorySection: React.FC<Props> = ({
               <option value="">Select…</option>
               <option value="no">No</option>
               <option value="yes">Yes</option>
-            </select>
-            {errors.needPowerFood && (
+            </Field>
+            {errors.needPowerFood && touched.needPowerFood && (
               <p className="text-red-500 text-xs font-semibold mt-1.5">
-                {errors.needPowerFood}
+                {getErrorMessage(errors.needPowerFood)}
               </p>
             )}
           </div>
 
-          {formData.needPowerFood === "yes" && (
+          {values.needPowerFood === "yes" && (
             <div>
               <label className="block text-[#f0b400] text-sm font-bold mb-2">
                 Equipment power (watts) *
               </label>
-              <input
+              <Field
                 name="foodWatts"
-                value={formData.foodWatts}
-                onChange={onChange}
                 placeholder="e.g., 1500W"
                 className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-                  errors.foodWatts
+                  errors.foodWatts && touched.foodWatts
                     ? "border-red-500"
                     : "border-[#f0b400] focus:border-[#f0b400]"
                 }`}
               />
-              {errors.foodWatts && (
+              {errors.foodWatts && touched.foodWatts && (
                 <p className="text-red-500 text-xs font-semibold mt-1.5">
-                  {errors.foodWatts}
+                  {getErrorMessage(errors.foodWatts)}
                 </p>
               )}
             </div>
@@ -148,26 +159,24 @@ const CategorySection: React.FC<Props> = ({
         </div>
       )}
 
-      {formData.category === "Clothing Vendor" && (
+      {values.category === "Clothing Vendor" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-[#f0b400] text-sm font-bold mb-2">
               Which type of clothes? *
             </label>
-            <input
+            <Field
               name="clothingType"
-              value={formData.clothingType}
-              onChange={onChange}
               placeholder="e.g., South Asian formalwear"
               className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-                errors.clothingType
+                errors.clothingType && touched.clothingType
                   ? "border-red-500"
                   : "border-[#f0b400] focus:border-[#f0b400]"
               }`}
             />
-            {errors.clothingType && (
+            {errors.clothingType && touched.clothingType && (
               <p className="text-red-500 text-xs font-semibold mt-1.5">
-                {errors.clothingType}
+                {getErrorMessage(errors.clothingType)}
               </p>
             )}
           </div>
@@ -179,35 +188,36 @@ const CategorySection: React.FC<Props> = ({
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) =>
-                onFileChange("clothingPhotos", e.target.files, true)
-              }
+              onChange={(e) => handleMultiFileChange("clothingPhotos", e.target.files)}
               className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f0b400] file:text-black hover:file:bg-yellow-500"
             />
+            {values.clothingPhotos.length > 0 && (
+              <p className="text-emerald-400 text-xs mt-1.5">
+                {values.clothingPhotos.length} file(s) selected
+              </p>
+            )}
           </div>
         </div>
       )}
 
-      {formData.category === "Jewelry Vendor" && (
+      {values.category === "Jewelry Vendor" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-[#f0b400] text-sm font-bold mb-2">
               Type of jewelry? *
             </label>
-            <input
+            <Field
               name="jewelryType"
-              value={formData.jewelryType}
-              onChange={onChange}
               placeholder="e.g., Bridal sets, everyday wear"
               className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-                errors.jewelryType
+                errors.jewelryType && touched.jewelryType
                   ? "border-red-500"
                   : "border-[#f0b400] focus:border-[#f0b400]"
               }`}
             />
-            {errors.jewelryType && (
+            {errors.jewelryType && touched.jewelryType && (
               <p className="text-red-500 text-xs font-semibold mt-1.5">
-                {errors.jewelryType}
+                {getErrorMessage(errors.jewelryType)}
               </p>
             )}
           </div>
@@ -219,35 +229,37 @@ const CategorySection: React.FC<Props> = ({
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) =>
-                onFileChange("jewelryPhotos", e.target.files, true)
-              }
+              onChange={(e) => handleMultiFileChange("jewelryPhotos", e.target.files)}
               className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f0b400] file:text-black hover:file:bg-yellow-500"
             />
+            {values.jewelryPhotos.length > 0 && (
+              <p className="text-emerald-400 text-xs mt-1.5">
+                {values.jewelryPhotos.length} file(s) selected
+              </p>
+            )}
           </div>
         </div>
       )}
 
-      {formData.category === "Craft Booth" && (
+      {values.category === "Craft Booth" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-[#f0b400] text-sm font-bold mb-2">
               Give some details about your items? *
             </label>
-            <textarea
+            <Field
+              as="textarea"
               name="craftDetails"
-              value={formData.craftDetails}
-              onChange={onChange}
               rows={3}
               className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-                errors.craftDetails
+                errors.craftDetails && touched.craftDetails
                   ? "border-red-500"
                   : "border-[#f0b400] focus:border-[#f0b400]"
               }`}
             />
-            {errors.craftDetails && (
+            {errors.craftDetails && touched.craftDetails && (
               <p className="text-red-500 text-xs font-semibold mt-1.5">
-                {errors.craftDetails}
+                {getErrorMessage(errors.craftDetails)}
               </p>
             )}
           </div>
@@ -259,20 +271,24 @@ const CategorySection: React.FC<Props> = ({
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) => onFileChange("craftPhotos", e.target.files, true)}
+              onChange={(e) => handleMultiFileChange("craftPhotos", e.target.files)}
               className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f0b400] file:text-black hover:file:bg-yellow-500"
             />
+            {values.craftPhotos.length > 0 && (
+              <p className="text-emerald-400 text-xs mt-1.5">
+                {values.craftPhotos.length} file(s) selected
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-[#f0b400] text-sm font-bold mb-2">
               Do you need a power outlet? *
             </label>
-            <select
+            <Field
+              as="select"
               name="needPowerCraft"
-              value={formData.needPowerCraft}
-              onChange={onChange}
               className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
-                errors.needPowerCraft
+                errors.needPowerCraft && touched.needPowerCraft
                   ? "border-red-500"
                   : "border-[#f0b400] focus:border-[#f0b400]"
               }`}
@@ -280,32 +296,30 @@ const CategorySection: React.FC<Props> = ({
               <option value="">Select…</option>
               <option value="no">No</option>
               <option value="yes">Yes</option>
-            </select>
-            {errors.needPowerCraft && (
+            </Field>
+            {errors.needPowerCraft && touched.needPowerCraft && (
               <p className="text-red-500 text-xs font-semibold mt-1.5">
-                {errors.needPowerCraft}
+                {getErrorMessage(errors.needPowerCraft)}
               </p>
             )}
           </div>
-          {formData.needPowerCraft === "yes" && (
+          {values.needPowerCraft === "yes" && (
             <div>
               <label className="block text-[#f0b400] text-sm font-bold mb-2">
                 Equipment power (watts) *
               </label>
-              <input
+              <Field
                 name="craftWatts"
-                value={formData.craftWatts}
-                onChange={onChange}
                 placeholder="e.g., 300W"
                 className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition ${
-                  errors.craftWatts
+                  errors.craftWatts && touched.craftWatts
                     ? "border-red-500"
                     : "border-[#f0b400] focus:border-[#f0b400]"
                 }`}
               />
-              {errors.craftWatts && (
+              {errors.craftWatts && touched.craftWatts && (
                 <p className="text-red-500 text-xs font-semibold mt-1.5">
-                  {errors.craftWatts}
+                  {getErrorMessage(errors.craftWatts)}
                 </p>
               )}
             </div>

@@ -1,113 +1,241 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { Formik, Form, FormikHelpers } from "formik";
+import * as Yup from "yup";
 import Header from "@/components/Homepage.tsx/header";
 import { TermsCheckboxWithModal } from "@/components/common/TermsModal";
-import { BOOTH_KEY, DEFAULT_PRICING, SCROLL_KEY } from "@/lib/vendorformconfig";
+import { BOOTH_KEY, SCROLL_KEY } from "@/lib/vendorformconfig";
 import ContactBusinessSection from "@/components/vendor/ContactBusinessSection";
 import CategorySection from "@/components/vendor/CategorySection";
 import BoothAndPaymentSection from "@/components/vendor/BoothAndPaymentSection";
+import { resetFormState, selectForms } from "@/redux/slices/userSlice";
+import { submitVendorAsync } from "@/services/auth/asyncThunk";
 
-// Custom hooks
-import { useFormState } from "@/hooks/useFormState";
-import { useBoothManagement } from "@/hooks/useBoothMaangement";
-import { usePromoCode } from "@/hooks/usePromoCode";
-import { validateForm } from "@/utils/vendor/formValidations";
-import { createSubmissionPayload, submitToFormspark } from "@/utils/vendor/formSubmission";
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface VendorFormValues {
+  personName: string;
+  vendorName: string;
+  email: string;
+  phone: string;
+  isOakville: "" | "yes" | "no";
+  selectedEvent: string;
+  businessLogo: File | null;
+  instagram: string;
+  facebook: string;
+  category: string;
+  foodItems: string;
+  needPowerFood: "" | "yes" | "no";
+  foodWatts: string;
+  foodPhotos: File[];
+  clothingType: string;
+  clothingPhotos: File[];
+  jewelryType: string;
+  jewelryPhotos: File[];
+  craftDetails: string;
+  needPowerCraft: "" | "yes" | "no";
+  craftWatts: string;
+  craftPhotos: File[];
+  boothNumber: string;
+  notes: string;
+  terms: boolean;
+}
+
+interface FileStore {
+  businessLogo: File | null;
+  foodPhotos: File[];
+  clothingPhotos: File[];
+  jewelryPhotos: File[];
+  craftPhotos: File[];
+}
+
+// ============================================================================
+// FILE STORAGE UTILITIES
+// ============================================================================
+
+const FILE_STORE_KEY = 'vendorFormFiles';
+
+// Store files in memory using a global variable (persists during navigation within the same session)
+const fileStore: { current: FileStore | null } = { current: null };
+
+const saveFilesToMemory = (files: FileStore) => {
+  fileStore.current = files;
+  // Also save file metadata to sessionStorage for display purposes
+  try {
+    sessionStorage.setItem(FILE_STORE_KEY, JSON.stringify({
+      businessLogo: files.businessLogo ? { name: files.businessLogo.name, size: files.businessLogo.size } : null,
+      foodPhotos: files.foodPhotos.map(f => ({ name: f.name, size: f.size })),
+      clothingPhotos: files.clothingPhotos.map(f => ({ name: f.name, size: f.size })),
+      jewelryPhotos: files.jewelryPhotos.map(f => ({ name: f.name, size: f.size })),
+      craftPhotos: files.craftPhotos.map(f => ({ name: f.name, size: f.size })),
+    }));
+  } catch (error) {
+    console.error('Error saving file metadata:', error);
+  }
+};
+
+const loadFilesFromMemory = (): FileStore => {
+  if (fileStore.current) {
+    return fileStore.current;
+  }
+  return {
+    businessLogo: null,
+    foodPhotos: [],
+    clothingPhotos: [],
+    jewelryPhotos: [],
+    craftPhotos: [],
+  };
+};
+
+const clearFilesFromMemory = () => {
+  fileStore.current = null;
+  try {
+    sessionStorage.removeItem(FILE_STORE_KEY);
+  } catch {}
+};
+
+// ============================================================================
+// INITIAL VALUES
+// ============================================================================
+
+const createEmptyValues = (): VendorFormValues => ({
+  personName: "",
+  vendorName: "",
+  email: "",
+  phone: "",
+  isOakville: "",
+  selectedEvent: "",
+  businessLogo: null,
+  instagram: "",
+  facebook: "",
+  category: "",
+  foodItems: "",
+  needPowerFood: "",
+  foodWatts: "",
+  foodPhotos: [],
+  clothingType: "",
+  clothingPhotos: [],
+  jewelryType: "",
+  jewelryPhotos: [],
+  craftDetails: "",
+  needPowerCraft: "",
+  craftWatts: "",
+  craftPhotos: [],
+  boothNumber: "",
+  notes: "",
+  terms: false,
+});
+
+const getInitialValues = (): VendorFormValues => {
+  if (typeof window === 'undefined') {
+    return createEmptyValues();
+  }
+
+  try {
+    const savedData = sessionStorage.getItem('vendorFormDraft');
+    const savedFiles = loadFilesFromMemory();
+
+    if (!savedData) {
+      return { ...createEmptyValues(), ...savedFiles };
+    }
+
+    const parsed = JSON.parse(savedData);
+    
+    return {
+      ...createEmptyValues(),
+      ...parsed,
+      ...savedFiles, // Restore actual File objects
+    };
+  } catch {
+    return createEmptyValues();
+  }
+};
+
+// ============================================================================
+// VALIDATION SCHEMAS
+// ============================================================================
+
+const step1Schema = Yup.object({
+  personName: Yup.string().required("Person name is required"),
+  vendorName: Yup.string().required("Vendor name is required"),
+  email: Yup.string().email("Invalid email").required("Email is required"),
+  phone: Yup.string().required("Phone is required"),
+  isOakville: Yup.string().oneOf(["yes", "no"], "Please select Yes or No").required("Please select Yes or No"),
+  selectedEvent: Yup.string().required("Please select an event"),
+});
+
+const step2Schema = Yup.object({
+  category: Yup.string().required("Please choose a category"),
+  foodItems: Yup.string().when("category", {
+    is: "Food Vendor",
+    then: (schema) => schema.required("List up to 2 items"),
+  }),
+  needPowerFood: Yup.string().when("category", {
+    is: "Food Vendor",
+    then: (schema) => schema.oneOf(["yes", "no"]).required("Power requirement is required"),
+  }),
+  foodWatts: Yup.string().when(["category", "needPowerFood"], {
+    is: (category: string, needPower: string) => category === "Food Vendor" && needPower === "yes",
+    then: (schema) => schema.required("Specify equipment watts"),
+  }),
+  clothingType: Yup.string().when("category", {
+    is: "Clothing Vendor",
+    then: (schema) => schema.required("Tell us the type of clothes"),
+  }),
+  jewelryType: Yup.string().when("category", {
+    is: "Jewelry Vendor",
+    then: (schema) => schema.required("Tell us the jewelry type"),
+  }),
+  craftDetails: Yup.string().when("category", {
+    is: "Craft Booth",
+    then: (schema) => schema.required("Give some details about your items"),
+  }),
+  needPowerCraft: Yup.string().when("category", {
+    is: "Craft Booth",
+    then: (schema) => schema.oneOf(["yes", "no"]).required("Power requirement is required"),
+  }),
+  craftWatts: Yup.string().when(["category", "needPowerCraft"], {
+    is: (category: string, needPower: string) => category === "Craft Booth" && needPower === "yes",
+    then: (schema) => schema.required("Specify equipment watts"),
+  }),
+});
+
+const step3Schema = Yup.object({
+  boothNumber: Yup.string().required("Please select a booth on the map"),
+  terms: Yup.boolean().oneOf([true], "Please accept the terms to proceed"),
+});
+
+const validationSchemas = [step1Schema, step2Schema, step3Schema];
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 const VendorForm: React.FC = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { isLoading, vendorSuccess } = useSelector(selectForms);
 
-  // Custom hooks
-  const {
-    formData,
-    setFormData,
-    errors,
-    setErrors,
-    handleChange,
-    handleFile,
-    resetForm,
-  } = useFormState();
-
-  const {
-    bookedBooths,
-    isCheckingBooth,
-    checkBoothAvailability,
-    saveBoothToSheet,
-    fetchBookedBooths,
-  } = useBoothManagement();
-
-  // Calculate base price
-  const basePrice = useMemo(() => {
-    const currentBoothNumber = formData.boothNumber;
-    const stored = typeof window !== 'undefined' ? localStorage.getItem(BOOTH_KEY) : null;
-
-    if (stored) {
-      try {
-        const booth = JSON.parse(stored) as { price?: number; id?: number };
-        if (
-          typeof booth?.price === 'number' &&
-          (!currentBoothNumber || String(booth.id) === currentBoothNumber)
-        ) {
-          return booth.price;
-        }
-      } catch {
-        if (formData.category) return DEFAULT_PRICING[formData.category];
-        return 0;
-      }
-    }
-
-    if (formData.category) return DEFAULT_PRICING[formData.category];
-    return 0;
-  }, [formData.category, formData.boothNumber]);
-
-  const {
-    appliedPromo,
-    promoError,
-    setPromoError,
-    discountedPrice,
-    applyPromo,
-    removePromo,
-    getDiscountAmount,
-    discountLabel,
-  } = usePromoCode(basePrice);
-
-  // Local state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccessMessage, setSubmitSuccessMessage] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
   const [showBoothSuccess, setShowBoothSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // Reference to track if files have been restored
+  const filesRestoredRef = useRef(false);
 
-  // Load booth from localStorage on mount
+  // Load saved step on mount
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(BOOTH_KEY);
-      if (!raw) return;
-
-      const booth = JSON.parse(raw) as {
-        id: number;
-        category: "food" | "clothing" | "jewelry" | "craft";
-        price?: number;
-      };
-
-      const boothId = String(booth.id);
-      if (bookedBooths.has(boothId)) {
-        localStorage.removeItem(BOOTH_KEY);
-        setErrors((prev) => ({
-          ...prev,
-          boothNumber: "This booth is no longer available. Please select another.",
-        }));
-        return;
-      }
-
-      setFormData((f) => ({ ...f, boothNumber: boothId }));
-      setShowBoothSuccess(true);
-      setTimeout(() => setShowBoothSuccess(false), 5000);
-    } catch {
-      return;
+    const savedStep = sessionStorage.getItem('vendorFormStep');
+    if (savedStep) {
+      setCurrentStep(parseInt(savedStep, 10));
+      sessionStorage.removeItem('vendorFormStep');
     }
-  }, [bookedBooths, setFormData, setErrors]);
+  }, []);
 
   // Restore scroll position
   useEffect(() => {
@@ -120,238 +248,374 @@ const VendorForm: React.FC = () => {
     }
   }, []);
 
-  const goToMap = () => {
-    const cat = formData.category
-      ? `?category=${encodeURIComponent(formData.category)}`
-      : "";
-    try {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
-      }
-    } catch {
-      return;
+  // Handle successful submission
+  useEffect(() => {
+    if (vendorSuccess) {
+      sessionStorage.removeItem('vendorFormDraft');
+      localStorage.removeItem(BOOTH_KEY);
+      clearFilesFromMemory();
+      dispatch(resetFormState());
+      setCurrentStep(1);
     }
+  }, [vendorSuccess, dispatch]);
+
+  const goToMap = (values: VendorFormValues) => {
+    const cat = values.category ? `?category=${encodeURIComponent(values.category)}` : "";
+    
+    try {
+      // Save files to memory before navigation
+      saveFilesToMemory({
+        businessLogo: values.businessLogo,
+        foodPhotos: values.foodPhotos,
+        clothingPhotos: values.clothingPhotos,
+        jewelryPhotos: values.jewelryPhotos,
+        craftPhotos: values.craftPhotos,
+      });
+
+      // Save form data (excluding files)
+      const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } = values;
+      console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
+      sessionStorage.setItem('vendorFormDraft', JSON.stringify(dataToSave));
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+      sessionStorage.setItem('vendorFormStep', String(currentStep));
+    } catch (error) {
+      console.error('Error saving form state:', error);
+    }
+    
     router.push(`/booking/page${cat}`);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNext = async (
+    values: VendorFormValues,
+    helpers: FormikHelpers<VendorFormValues>
+  ) => {
+    const currentSchema = validationSchemas[currentStep - 1];
+    
+    try {
+      await currentSchema.validate(values, { abortEarly: false });
+      
+      // Save files before moving to next step
+      saveFilesToMemory({
+        businessLogo: values.businessLogo,
+        foodPhotos: values.foodPhotos,
+        clothingPhotos: values.clothingPhotos,
+        jewelryPhotos: values.jewelryPhotos,
+        craftPhotos: values.craftPhotos,
+      });
+      
+      setCurrentStep((prev) => Math.min(prev + 1, 3));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      saveFormDraft(values);
+    } catch (error) {
+      if (error instanceof Yup.ValidationError) {
+        const errors: Record<string, string> = {};
+        error.inner.forEach((err) => {
+          if (err.path) errors[err.path] = err.message;
+        });
+        helpers.setErrors(errors);
+      }
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const saveFormDraft = (values: VendorFormValues) => {
+    try {
+      const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } = values;
+      console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
+      sessionStorage.setItem('vendorFormDraft', JSON.stringify(dataToSave));
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    }
+  };
+
+  const handleSubmit = async (
+    values: VendorFormValues,
+  ) => {
     setSubmitError(null);
-    setSubmitSuccessMessage(null);
-
-    // Validate form
-    const validation = validateForm(formData, bookedBooths);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      return;
-    }
-
-    // Double-check booth availability
-    const availabilityCheck = await checkBoothAvailability(formData.boothNumber);
-    if (!availabilityCheck.available) {
-      setErrors((prev) => ({
-        ...prev,
-        boothNumber: availabilityCheck.message || "This booth is not available.",
-      }));
-      setSubmitError(availabilityCheck.message || "The booth is already selected.");
-      return;
-    }
-
-    // Create submission payload
-    const payload = createSubmissionPayload(
-      formData,
-      basePrice,
-      discountedPrice,
-      appliedPromo,
-      getDiscountAmount
-    );
 
     try {
-      setIsSubmitting(true);
-
-      // Save booth to SheetDB first
-      const boothResult = await saveBoothToSheet(
-        formData.boothNumber,
-        formData.category
-      );
-
-      if (!boothResult.success) {
-        setSubmitError(boothResult.message || "Failed to reserve the booth. Please try again.");
-        return;
-      }
-
-      // Submit to Formspark
-      const result = await submitToFormspark(payload);
-
-      if (!result.success) {
-        setSubmitError(result.error || "Submission failed");
-        return;
-      }
-
-      // Calculate hold until time
-      // const heldUntil = new Date(new Date().getTime() + HOLD_MS);
-
-      setSubmitSuccessMessage(
-        `Thank you for applying! Your booth is reserved for the next 48 hours. Please complete the next steps we send you to confirm your booking.`
-      );
-
-      // Refresh booked booths
-      await fetchBookedBooths();
-
-      // Reset form
-      resetForm(true);
-    } catch (err) {
-      console.error("Submit error:", err);
-      setSubmitError(
-        "Network error while submitting. Please check your connection and try again."
-      );
-    } finally {
-      setIsSubmitting(false);
+      console.log('Form values before submit:', values);
+      
+      // Pass the raw values object to Redux thunk
+      // The thunk will create the FormData
+      await dispatch(submitVendorAsync(values) as any);
+      
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitError('An error occurred during submission. Please try again.');
     }
   };
 
-  const handleResetClick = () => {
-    resetForm(false);
+  const handleReset = (resetForm: () => void) => {
+    resetForm();
+    sessionStorage.removeItem('vendorFormDraft');
+    localStorage.removeItem(BOOTH_KEY);
+    clearFilesFromMemory();
     setSubmitError(null);
-    setSubmitSuccessMessage(null);
+    setCurrentStep(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const discountAmount = getDiscountAmount();
+  const steps = [
+    { number: 1, title: "Business Details", description: "Contact & Business Information" },
+    { number: 2, title: "Category", description: "Select Category & Details" },
+    { number: 3, title: "Booth & Payment", description: "Select Booth & Review" },
+  ];
 
   return (
-    <div className="min-h-screen bg-black from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-black">
       <Header />
-      <div className="relative w-full mx-auto px-20 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-yellow-400 via-pink-400 to-purple-400 mb-4">
+      <div className="relative w-full mx-auto px-4 md:px-8 lg:px-20 py-16">
+        <div className="text-center mb-12 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-purple-500/10 to-pink-500/10 blur-3xl -z-10"></div>
+          <h1 className="relative text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 bg-clip-text text-transparent mb-4">
             Vendor Registration
           </h1>
-          <p className="text-gray-300 text-lg">
-            Submit your application so we can review exclusivity and confirm next steps.
+          <p className="relative text-gray-300 text-base md:text-lg max-w-2xl mx-auto">
+            Complete this form to register as a vendor. Follow the 3-step process to complete your application.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <ContactBusinessSection
-            formData={formData}
-            errors={errors}
-            onChange={handleChange}
-            onFileChange={handleFile}
-          />
+        {/* Stepper */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between max-w-3xl mx-auto">
+            {steps.map((step, index) => (
+              <React.Fragment key={step.number}>
+                <div className="flex flex-col items-center flex-1">
+                  <div
+                    className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-lg md:text-xl transition-all duration-300 ${
+                      currentStep === step.number
+                        ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-black scale-110 shadow-lg shadow-yellow-400/50"
+                        : currentStep > step.number
+                        ? "bg-emerald-500 text-white"
+                        : "bg-gray-700 text-gray-400"
+                    }`}
+                  >
+                    {currentStep > step.number ? (
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      step.number
+                    )}
+                  </div>
+                  <div className="mt-2 text-center hidden md:block">
+                    <p className={`text-sm font-bold ${currentStep >= step.number ? "text-yellow-400" : "text-gray-500"}`}>
+                      {step.title}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{step.description}</p>
+                  </div>
+                </div>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${
+                      currentStep > step.number
+                        ? "bg-gradient-to-r from-emerald-500 to-yellow-400"
+                        : "bg-gray-700"
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
 
-          <CategorySection
-            formData={formData}
-            errors={errors}
-            onChange={handleChange}
-            onFileChange={handleFile}
-          />
+          <div className="mt-6 text-center md:hidden">
+            <p className="text-yellow-400 font-bold text-lg">{steps[currentStep - 1].title}</p>
+            <p className="text-gray-400 text-sm">{steps[currentStep - 1].description}</p>
+          </div>
+        </div>
 
-          <BoothAndPaymentSection
-            formData={formData}
-            errors={errors}
-            basePrice={basePrice}
-            discountedPrice={discountedPrice}
-            appliedPromo={appliedPromo}
-            promoError={promoError}
-            discountAmount={discountAmount}
-            onChange={handleChange}            // ✅ add this
-            discountLabel={discountLabel}
-            showBoothSuccess={showBoothSuccess}
-            onGoToMap={goToMap}
-            onClearBooth={() => {
-              setFormData((f) => ({ ...f, boothNumber: "" }));
-              try {
-                localStorage.removeItem(BOOTH_KEY);
-              } catch {
-                return;
+        <Formik
+          initialValues={getInitialValues()}
+          validationSchema={validationSchemas[currentStep - 1]}
+          onSubmit={handleSubmit}
+          enableReinitialize={false}
+        >
+          {(formikProps) => {
+            const { values, errors, touched, setFieldValue, resetForm } = formikProps;
+
+            // Load booth on mount and restore files
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            useEffect(() => {
+              if (!filesRestoredRef.current) {
+                // Restore files from memory
+                const savedFiles = loadFilesFromMemory();
+                if (savedFiles.businessLogo || savedFiles.foodPhotos.length > 0 || 
+                    savedFiles.clothingPhotos.length > 0 || savedFiles.jewelryPhotos.length > 0 || 
+                    savedFiles.craftPhotos.length > 0) {
+                  setFieldValue('businessLogo', savedFiles.businessLogo);
+                  setFieldValue('foodPhotos', savedFiles.foodPhotos);
+                  setFieldValue('clothingPhotos', savedFiles.clothingPhotos);
+                  setFieldValue('jewelryPhotos', savedFiles.jewelryPhotos);
+                  setFieldValue('craftPhotos', savedFiles.craftPhotos);
+                }
+                filesRestoredRef.current = true;
               }
-            }}
-            onPromoChange={(value) => {
-              setFormData((f) => ({ ...f, promoCode: value }));
-              setPromoError("");
-            }}
-            onApplyPromo={() => applyPromo(formData.promoCode)}
-            onRemovePromo={removePromo}
-          />
 
-          {isCheckingBooth && (
-            <div className="text-center text-yellow-400 font-semibold">
-              Checking booth availability...
-            </div>
-          )}
+              // Load booth from localStorage
+              try {
+                const raw = localStorage.getItem(BOOTH_KEY);
+                if (raw) {
+                  const booth = JSON.parse(raw);
+                  setFieldValue('boothNumber', String(booth.id));
+                  setShowBoothSuccess(true);
+                  setTimeout(() => setShowBoothSuccess(false), 5000);
+                }
+              } catch {}
+            }, [setFieldValue]);
 
-          <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6">
-            <label className="block text-gray-300 font-semibold mb-2">
-              Notes (optional)
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows={4}
-              className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Any additional information you'd like to share..."
-            />
-          </div>
+            // Auto-save on value changes (excluding files - they're saved separately)
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            useEffect(() => {
+              const timer = setTimeout(() => {
+                // Save files to memory
+                saveFilesToMemory({
+                  businessLogo: values.businessLogo,
+                  foodPhotos: values.foodPhotos,
+                  clothingPhotos: values.clothingPhotos,
+                  jewelryPhotos: values.jewelryPhotos,
+                  craftPhotos: values.craftPhotos,
+                });
+                // Save form data
+                saveFormDraft(values);
+              }, 1000);
+              return () => clearTimeout(timer);
+            }, [values]);
 
-          <TermsCheckboxWithModal
-            checked={formData.terms}
-            error={errors.terms}
-            onChange={(checked) =>
-              setFormData((prev) => ({ ...prev, terms: checked }))
-            }
-          />
+            return (
+              <Form className="space-y-8">
+                {currentStep === 1 && (
+                  <div className="transition-all duration-500 ease-in-out">
+                    <ContactBusinessSection
+                      values={values}
+                      errors={errors}
+                      touched={touched}
+                      setFieldValue={setFieldValue}
+                    />
+                  </div>
+                )}
 
-          {submitError && (
-            <p className="text-red-500 text-center text-sm font-semibold mt-6">
-              {submitError}
-            </p>
-          )}
+                {currentStep === 2 && (
+                  <div className="transition-all duration-500 ease-in-out">
+                    <CategorySection
+                      values={values}
+                      errors={errors}
+                      touched={touched}
+                      setFieldValue={setFieldValue}
+                    />
+                  </div>
+                )}
 
-          {submitSuccessMessage && (
-            <p className="text-emerald-400 text-center text-sm font-semibold mt-6 max-w-2xl mx-auto">
-              {submitSuccessMessage}
-            </p>
-          )}
+                {currentStep === 3 && (
+                  <div className="transition-all duration-500 ease-in-out space-y-8">
+                    <BoothAndPaymentSection
+                      values={values}
+                      errors={errors}
+                      touched={touched}
+                      showBoothSuccess={showBoothSuccess}
+                      onGoToMap={() => goToMap(values)}
+                      onClearBooth={() => {
+                        setFieldValue('boothNumber', '');
+                        localStorage.removeItem(BOOTH_KEY);
+                      }}
+                      setFieldValue={setFieldValue}
+                    />
 
-          <div className="flex flex-wrap gap-4 justify-center mt-10">
-            <button
-              type="submit"
-              disabled={isSubmitting || isCheckingBooth}
-              className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-10 py-4 rounded-full text-base font-black tracking-wide shadow-xl shadow-yellow-400/40 hover:shadow-2xl hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Submitting…" : "Submit for Review"}
-            </button>
+                    <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6 hover:border-gray-600 transition-colors duration-300">
+                      <label className="block text-gray-300 font-semibold mb-2">
+                        Notes (optional)
+                      </label>
+                      <textarea
+                        name="notes"
+                        value={values.notes}
+                        onChange={(e) => setFieldValue('notes', e.target.value)}
+                        rows={4}
+                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200"
+                        placeholder="Any additional information you'd like to share..."
+                      />
+                    </div>
 
-            <button
-              type="button"
-              onClick={handleResetClick}
-              className="bg-transparent text-[#f0b400] px-10 py-4 rounded-full border-2 border-[#f0b400] text-base font-bold hover:bg-[#f0b400] hover:text-black transition"
-            >
-              Clear Form
-            </button>
-          </div>
-        </form>
+                    <TermsCheckboxWithModal
+                      checked={values.terms}
+                      error={touched.terms ? errors.terms : undefined}
+                      onChange={(checked) => setFieldValue('terms', checked)}
+                    />
+
+                    {submitError && (
+                      <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 transition-all duration-300">
+                        <p className="text-red-400 text-center text-sm font-semibold">
+                          {submitError}
+                        </p>
+                      </div>
+                    )}
+
+                    {vendorSuccess && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/50 rounded-xl p-4 transition-all duration-300">
+                        <p className="text-emerald-400 text-center text-sm font-semibold">
+                          Thank you for applying! Your booth is reserved for the next 48 hours. Please complete the next steps we send you to confirm your booking.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-4 justify-center mt-10">
+                  {currentStep > 1 && (
+                    <button
+                      type="button"
+                      onClick={handlePrevious}
+                      className="bg-transparent text-gray-400 px-10 py-4 rounded-full border-2 border-gray-600 text-base font-bold hover:bg-gray-700 hover:text-white transition-all duration-300"
+                    >
+                      ← Previous
+                    </button>
+                  )}
+
+                  {currentStep < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => handleNext(values, formikProps)}
+                      className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-10 py-4 rounded-full text-base font-black tracking-wide shadow-xl shadow-yellow-400/40 hover:shadow-2xl hover:shadow-yellow-400/60 hover:scale-105 transition-all duration-300 transform"
+                    >
+                      Next →
+                    </button>
+                  )}
+
+                  {currentStep === 3 && (
+                    <>
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-10 py-4 rounded-full text-base font-black tracking-wide shadow-xl shadow-yellow-400/40 hover:shadow-2xl hover:shadow-yellow-400/60 hover:scale-105 transition-all duration-300 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      >
+                        {isLoading ? "Submitting…" : "Submit for Review"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReset(resetForm)}
+                        className="bg-transparent text-[#f0b400] px-10 py-4 rounded-full border-2 border-[#f0b400] text-base font-bold hover:bg-[#f0b400] hover:text-black transition-all duration-300"
+                      >
+                        Clear Form
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                <div className="text-center text-gray-500 text-sm mt-6">
+                  Step {currentStep} of 3
+                </div>
+              </Form>
+            );
+          }}
+        </Formik>
       </div>
     </div>
   );
 };
 
 export default VendorForm;
-
-//. remove backend use spreadsheet and sheetdb for endpoints and use spartform for form saving 
-
-///first thing to explain
-
-/// vendor page 1400 + lines ka tha ham ne 340 lines 
-/// custom hooks + code ko split kiya ha new components me 
-/// contact business wala compoent separate kiya ha 
-/// category section ko sepate component me divide kiya ha 
-/// boothandpayment section ko separete compoent me use kiya ha 
-
-///second thing to explain 
-
-/// react js ke ander custom hooks hoty han 
-/// useformhook taky ham is components ke form ke sare functions ko separate hook se manage kr skty, jis me all form data , errors , file handling 
-/// useboothselection hook is me ham booth selection ke sare fuctions ko use kr rhy han jis me 
-

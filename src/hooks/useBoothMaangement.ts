@@ -1,138 +1,64 @@
-// hooks/useBoothManagement.ts
-import { useState, useCallback } from 'react';
+// =============================================================================
+// hooks/useBoothSelection.ts
+// =============================================================================
 
-interface BoothData {
-  b_boothID: string;
-  b_category: string;
-  b_status: 'booked' | 'available';
-  b_bookedTime: string;
+/**
+ * Simplified hook to manage booth selection from localStorage
+ * Backend handles booth availability validation and pricing
+ */
+
+import { useState, useEffect } from 'react';
+
+export interface SelectedBooth {
+  id: number;
+  category: string;
+  price?: number; // Optional - backend will provide final price
 }
 
-const BOOTH_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours
+export const useBoothSelection = (storageKey: string = 'selectedBooth') => {
+  const [selectedBooth, setSelectedBooth] = useState<SelectedBooth | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export const useBoothManagement = () => {
-  const [bookedBooths, setBookedBooths] = useState<Set<string>>(new Set());
-  const [isCheckingBooth, setIsCheckingBooth] = useState(false);
+  // Load booth from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-  const isBoothExpired = (bookedTime: string): boolean => {
-    if (!bookedTime) return true;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const booth = JSON.parse(raw) as SelectedBooth;
+        setSelectedBooth(booth);
+      }
+    } catch (error) {
+      console.error('Error loading booth selection:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [storageKey]);
 
-    const bookedDate = new Date(bookedTime);
-    const now = new Date();
-    const diffMs = now.getTime() - bookedDate.getTime();
-
-    return diffMs > BOOTH_EXPIRY_MS;
+  const clearBooth = () => {
+    try {
+      localStorage.removeItem(storageKey);
+      setSelectedBooth(null);
+    } catch (error) {
+      console.error('Error clearing booth:', error);
+    }
   };
 
-  const fetchBookedBooths = useCallback(async (): Promise<Set<string>> => {
+  const saveBooth = (booth: SelectedBooth) => {
     try {
-      const response = await fetch('/api/booths/list');
-      if (!response.ok) throw new Error('Failed to fetch booth data');
-
-      const data: BoothData[] = await response.json();
-      const booked = new Set<string>();
-
-      data.forEach((row) => {
-        if (row.b_boothID && row.b_status === 'booked' && row.b_bookedTime) {
-          if (!isBoothExpired(row.b_bookedTime)) {
-            booked.add(String(row.b_boothID));
-          }
-        }
-      });
-
-      setBookedBooths(booked);
-      return booked;
+      localStorage.setItem(storageKey, JSON.stringify(booth));
+      setSelectedBooth(booth);
     } catch (error) {
-      console.error('Error fetching booked booths:', error);
-      return bookedBooths;
+      console.error('Error saving booth:', error);
     }
-  }, [bookedBooths]);
-
-  const checkBoothAvailability = useCallback(
-    async (
-      boothId: string
-    ): Promise<{
-      available: boolean;
-      message?: string;
-    }> => {
-      try {
-        setIsCheckingBooth(true);
-
-        const latestBooked = await fetchBookedBooths();
-
-        if (latestBooked.has(String(boothId))) {
-          return {
-            available: false,
-            message:
-              'This booth is already booked. You can book it again after 48 hours.',
-          };
-        }
-
-        return { available: true };
-      } catch (error) {
-        console.error('Error checking booth availability:', error);
-        return { available: true };
-      } finally {
-        setIsCheckingBooth(false);
-      }
-    },
-    [fetchBookedBooths]
-  );
-
-  const saveBoothToSheet = useCallback(
-    async (
-      boothId: string,
-      category: string
-    ): Promise<{ success: boolean; message?: string }> => {
-      try {
-        const availabilityCheck = await checkBoothAvailability(boothId);
-
-        if (!availabilityCheck.available) {
-          return {
-            success: false,
-            message: availabilityCheck.message || 'Booth is not available',
-          };
-        }
-
-        const response = await fetch('/api/booths/book', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ boothId, category }),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.message || 'Failed to save booth booking');
-        }
-
-        await fetchBookedBooths();
-
-        return { success: true };
-      } catch (error) {
-        console.error('Error saving booth to sheet:', error);
-        return {
-          success: false,
-          message: 'Failed to save booth booking',
-        };
-      }
-    },
-    [checkBoothAvailability, fetchBookedBooths]
-  );
-
-  // useEffect(() => {
-  //   fetchBookedBooths();
-  //   const interval = setInterval(fetchBookedBooths, 60000); // refresh every 60s
-  //   return () => clearInterval(interval);
-  // }, [fetchBookedBooths]);
+  };
 
   return {
-    bookedBooths,
-    isCheckingBooth,
-    checkBoothAvailability,
-    saveBoothToSheet,
-    fetchBookedBooths,
+    selectedBooth,
+    isLoading,
+    clearBooth,
+    saveBooth,
+    boothId: selectedBooth?.id ? String(selectedBooth.id) : '',
   };
 };

@@ -29,6 +29,7 @@ export type VendorFormData = {
   amountToPay: number;
   foodPhotos: File[];
   clothingPhotos: File[];
+  selectedEvent: string,
   jewelryPhotos: File[];
   craftPhotos: File[];
 };
