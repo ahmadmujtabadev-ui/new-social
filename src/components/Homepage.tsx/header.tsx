@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from "react";
 import { Search, Menu, X } from "lucide-react";
 import Image from "next/image";
@@ -201,6 +199,30 @@ function Header() {
                 Get in Touch
               </button>
 
+              {/* Admin Login Button */}
+              <button
+                onClick={() => router.push("/admin/login")}
+                className="hidden md:inline-flex items-center justify-center h-10 lg:h-12 px-4 lg:px-6 rounded-full text-sm lg:text-base font-bold tracking-wide transition-all duration-300 transform hover:scale-105"
+                style={{
+                  border: `2px solid ${GOLD}`,
+                  color: GOLD,
+                  background: "rgba(0,0,0,0.5)",
+                  boxShadow: `0 0 15px ${GOLD}33`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `${GOLD}22`;
+                  e.currentTarget.style.color = GOLD;
+                  e.currentTarget.style.boxShadow = `0 0 25px ${GOLD}66`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(0,0,0,0.5)";
+                  e.currentTarget.style.color = GOLD;
+                  e.currentTarget.style.boxShadow = `0 0 15px ${GOLD}33`;
+                }}
+              >
+                Admin
+              </button>
+
               {/* Search icon */}
               <button
                 className="hidden sm:block text-white transition-all duration-300 hover:scale-110 hover:text-[#f4c63f]"
@@ -269,6 +291,23 @@ function Header() {
           >
             Get in Touch
           </button>
+
+          {/* Admin Login Button for Mobile */}
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              router.push("/admin/login");
+            }}
+            className="w-full py-4 rounded-full text-xl font-bold tracking-wide transition-all duration-300"
+            style={{
+              backgroundColor: "rgba(0,0,0,0.5)",
+              color: GOLD,
+              border: `2px solid ${GOLD}`,
+              boxShadow: `0 0 20px ${GOLD}66`,
+            }}
+          >
+            Admin Login
+          </button>
         </div>
       </div>
 
@@ -295,7 +334,7 @@ function Header() {
             </h2>
             <p className="text-sm text-slate-300 mb-5">
               Have a question about Oakville Eid Festival or want to
-              collaborate? Send us a message and we’ll reply by email.
+              collaborate? Send us a message and we will reply by email.
             </p>
 
             <form onSubmit={handleContactSubmit} className="space-y-4">
