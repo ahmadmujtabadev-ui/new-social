@@ -1,7 +1,7 @@
 // src/redux/store.ts
 import { configureStore } from "@reduxjs/toolkit";
 import formsReducer from "./slices/userSlice";          // adjust path/name to your actual file
-import dashboardReducer from "./slices/dashboardslice";  // IMPORTANT: default import
+import dashboardReducer from "./slices/dashboardSlice";  // IMPORTANT: default import
 import adminReducer from "./slices/adminSlice";          // adjust path/name to your actual file
 
 export const store = configureStore({

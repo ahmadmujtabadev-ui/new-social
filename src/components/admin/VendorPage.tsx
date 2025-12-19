@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { Search, Eye, Trash2, RefreshCw, Filter } from 'lucide-react';
 import VendorDetailsModal from './VendorDetailsModal';
 import { deleteVendor, fetchVendors, updateVendor } from '@/services/dashbord/asyncThunk';
-import { setFilters } from '@/redux/slices/dashboardslice';
+import { setFilters } from '@/redux/slices/dashboardSlice';
 
 const VendorsPage: React.FC = () => {
   const dispatch = useAppDispatch();
