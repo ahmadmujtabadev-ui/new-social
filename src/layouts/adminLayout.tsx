@@ -9,7 +9,6 @@ import {
   LogOut,
   Menu,
   X,
-  Settings,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -104,14 +103,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
           {/* Bottom Section */}
           <div className="border-t border-gray-800 mt-6 pt-6">
-            <Link
-              href="/admin/settings"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-all"
-            >
-              <Settings className="h-5 w-5 text-gray-400" />
-              <span>Settings</span>
-            </Link>
-
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-gray-800 transition-all"
@@ -215,14 +206,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </div>
 
               <div className="border-t border-gray-800 mt-6 pt-6 space-y-2">
-                <Link
-                  href="/admin/settings"
-                  onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800"
-                >
-                  <Settings className="h-5 w-5" />
-                  <span>Settings</span>
-                </Link>
+          
 
                 <button
                   onClick={() => {
