@@ -24,10 +24,7 @@ interface Props {
 }
 
 const EVENT_OPTIONS = [
-  { value: "participating", label: "Participating" },
-  { value: "sponsoring", label: "Sponsoring" },
-  { value: "volunteering", label: "Volunteering" },
-  { value: "setting_stall", label: "Setting Stall" },
+  { value: "oakville-eid-2026", label: "oakville-eid-2026", },
 ];
 
 const ContactBusinessSection: React.FC<Props> = ({

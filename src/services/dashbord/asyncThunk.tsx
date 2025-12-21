@@ -1,15 +1,17 @@
-// src/redux/thunks/dashboardThunks.ts
+// src/services/dashbord/asyncThunk.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import ls from "localstorage-slim";
 import { HttpService } from "@/services/index";
 import { dashboardService } from "./endpoints";
 
-// or keep types in this file if you want
-
 const setTokenIfAny = () => {
   const token = ls.get("access_token", { decrypt: true }) as string;
   if (token) HttpService.setToken(token);
 };
+
+// ============================================
+// VENDORS
+// ============================================
 
 export const fetchVendors = createAsyncThunk(
   "dashboard/fetchVendors",
@@ -17,55 +19,12 @@ export const fetchVendors = createAsyncThunk(
     try {
       setTokenIfAny();
       const res = await dashboardService.vendors();
-
       const data = res;
       console.log("Fetched vendors data:", data);
-      // support both array and paginated response
       if (Array.isArray(data)) {
         return { items: data, total: data.length, page: 1, pages: 1 };
       }
-
-      return data; // {items,total,page,pages}
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed");
-    }
-  }
-);
-
-export const fetchSponsors = createAsyncThunk(
-  "dashboard/fetchSponsors",
-  async (_: void, { rejectWithValue }) => {
-    try {
-      setTokenIfAny();
-      const res = await dashboardService.sponsors();
-      console.log("Fetched sponsors data:", res);
-      return res;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed");
-    }
-  }
-);
-
-export const fetchBooths = createAsyncThunk(
-  "dashboard/fetchBooths",
-  async (_: void, { rejectWithValue }) => {
-    try {
-      setTokenIfAny();
-      const res = await dashboardService.booths();
-      return res.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed");
-    }
-  }
-);
-
-export const fetchStats = createAsyncThunk(
-  "dashboard/fetchStats",
-  async (_: void, { rejectWithValue }) => {
-    try {
-      setTokenIfAny();
-      const res = await dashboardService.stats();
-      return res.data;
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || "Failed");
     }
@@ -98,6 +57,24 @@ export const deleteVendor = createAsyncThunk(
   }
 );
 
+// ============================================
+// SPONSORS
+// ============================================
+
+export const fetchSponsors = createAsyncThunk(
+  "dashboard/fetchSponsors",
+  async (_: void, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.sponsors();
+      console.log("Fetched sponsors data:", res);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed");
+    }
+  }
+);
+
 export const updateSponsor = createAsyncThunk(
   "dashboard/updateSponsor",
   async ({ id, updates }: { id: string; updates: Partial<any> }, { rejectWithValue }) => {
@@ -120,6 +97,125 @@ export const deleteSponsor = createAsyncThunk(
       return id;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || "Failed");
+    }
+  }
+);
+
+// ============================================
+// PARTICIPANTS
+// ============================================
+
+export const fetchParticipants = createAsyncThunk(
+  "dashboard/fetchParticipants",
+  async (_: void, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.participants();
+      console.log("Fetched participants data:", res);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch participants");
+    }
+  }
+);
+
+export const updateParticipant = createAsyncThunk(
+  "dashboard/updateParticipant",
+  async ({ id, updates }: { id: string; updates: Partial<any> }, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.updateParticipant(id, updates);
+      return res.data || res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update participant");
+    }
+  }
+);
+
+export const deleteParticipant = createAsyncThunk(
+  "dashboard/deleteParticipant",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      await dashboardService.deleteParticipant(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to delete participant");
+    }
+  }
+);
+
+// ============================================
+// VOLUNTEERS
+// ============================================
+
+export const fetchVolunteers = createAsyncThunk(
+  "dashboard/fetchVolunteers",
+  async (_: void, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.volunteers();
+      console.log("Fetched volunteers data:", res);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch volunteers");
+    }
+  }
+);
+
+export const updateVolunteer = createAsyncThunk(
+  "dashboard/updateVolunteer",
+  async ({ id, updates }: { id: string; updates: Partial<any> }, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.updateVolunteer(id, updates);
+      return res.data || res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update volunteer");
+    }
+  }
+);
+
+export const deleteVolunteer = createAsyncThunk(
+  "dashboard/deleteVolunteer",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      await dashboardService.deleteVolunteer(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to delete volunteer");
+    }
+  }
+);
+
+// ============================================
+// BOOTHS & STATS
+// ============================================
+
+export const fetchBooths = createAsyncThunk(
+  "dashboard/fetchBooths",
+  async (_: void, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.booths();
+      return res.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed");
+    }
+  }
+);
+
+export const fetchStats = createAsyncThunk(
+  "dashboard/fetchStats",
+  async (_: void, { rejectWithValue }) => {
+    try {
+      const res = await dashboardService.stats();
+      console.log("Fetched stats data:", res);
+      const statsData = res?.data.stats || res;
+      return statsData;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch stats");
     }
   }
 );

@@ -25,6 +25,8 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/admin/admin', icon: LayoutDashboard },
   { name: 'Vendors', href: '/admin/vendors', icon: Users },
   { name: 'Sponsors', href: '/admin/sponsors', icon: Trophy },
+  { name: 'Volunteers', href: '/admin/volunteers', icon: Users },
+  { name: 'Participants', href: '/admin/participants', icon: Trophy },
   // { name: 'Booths', href: '/admin/booths', icon: Store },
 ];
 
@@ -90,8 +92,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   key={item.name}
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${active
-                      ? 'bg-yellow-400 text-gray-900'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    ? 'bg-yellow-400 text-gray-900'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                     }`}
                 >
                   <Icon className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-400'}`} />
@@ -194,8 +196,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${active
-                          ? 'bg-yellow-400 text-gray-900'
-                          : 'text-gray-300 hover:bg-gray-800'
+                        ? 'bg-yellow-400 text-gray-900'
+                        : 'text-gray-300 hover:bg-gray-800'
                         }`}
                     >
                       <Icon className="h-5 w-5" />
@@ -206,7 +208,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </div>
 
               <div className="border-t border-gray-800 mt-6 pt-6 space-y-2">
-          
+
 
                 <button
                   onClick={() => {

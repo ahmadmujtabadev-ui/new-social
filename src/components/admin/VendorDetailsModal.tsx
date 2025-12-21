@@ -1,6 +1,6 @@
 // src/components/admin/VendorDetailsModal.tsx
 import React from 'react';
-import { X, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { X, Mail, Phone, MapPin, Calendar, Download, Image as ImageIcon, Zap } from 'lucide-react';
 
 interface VendorDetailsModalProps {
   vendor: any;
@@ -8,11 +8,71 @@ interface VendorDetailsModalProps {
 }
 
 const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose }) => {
+
+  const handleDownload = (path: string, filename: string) => {
+    const url = path;
+    if (!url) return;
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Helper to render image gallery
+  const renderImageGallery = (paths: string[], title: string) => {
+    if (!paths || paths.length === 0) return null;
+
+    return (
+      <div className="mt-4">
+        <h5 className="text-sm font-medium text-gray-700 mb-2">{title}</h5>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {paths.map((path, index) => {
+            const imageUrl = path;
+            if (!imageUrl) return null;
+
+            return (
+              <div key={index} className="relative group">
+                <img
+                  src={imageUrl}
+                  alt={`${title} ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/150?text=Image+Not+Found';
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => window.open(imageUrl, '_blank')}
+                    className="p-2 bg-white rounded-full hover:bg-gray-100 transition"
+                    title="View full size"
+                  >
+                    <ImageIcon className="w-4 h-4 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={() => handleDownload(path, `${title}-${index + 1}.jpg`)}
+                    className="p-2 bg-white rounded-full hover:bg-gray-100 transition"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4 text-gray-700" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <h3 className="text-xl font-bold text-gray-900">Vendor Details</h3>
           <button
             onClick={onClose}
@@ -24,6 +84,32 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Business Logo */}
+          {vendor.businessLogoPath && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Business Logo
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                <img
+                  src={vendor.businessLogoPath || ''}
+                  alt="Business Logo"
+                  className="h-24 w-24 object-contain rounded-lg border border-gray-200"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/100?text=Logo';
+                  }}
+                />
+                <button
+                  onClick={() => handleDownload(vendor.businessLogoPath, 'business-logo.jpg')}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Logo
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Basic Info */}
           <div>
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -31,6 +117,10 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </h4>
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="grid grid-cols-2 gap-4">
+                  <p className="text-sm text-gray-600">Selected Event</p>
+
+                <p className="text-base font-medium text-gray-900">{vendor.selectedEvent}</p>
+
                 <div>
                   <p className="text-sm text-gray-600">Vendor Name</p>
                   <p className="text-base font-medium text-gray-900">{vendor.vendorName}</p>
@@ -40,7 +130,7 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
                   <p className="text-base font-medium text-gray-900">{vendor.category}</p>
                 </div>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Booth Number</p>
                 <p className="text-2xl font-bold text-yellow-600">#{vendor.boothNumber}</p>
@@ -48,11 +138,12 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
 
               <div>
                 <p className="text-sm text-gray-600">Status</p>
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                  vendor.status === 'approved' ? 'bg-green-100 text-green-800' :
-                  vendor.status === 'held' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${vendor.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    vendor.status === 'held' ? 'bg-yellow-100 text-yellow-800' :
+                      vendor.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                        vendor.status === 'expired' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                  }`}>
                   {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
                 </span>
               </div>
@@ -104,13 +195,41 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
               <div className="pt-3 border-t border-gray-200">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">From Oakville:</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    vendor.contact?.isOakville ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${vendor.contact?.isOakville ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
                     {vendor.contact?.isOakville ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
+
+              {/* Social Media */}
+              {(vendor.socials?.instagram || vendor.socials?.facebook) && (
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-sm text-gray-600 mb-2">Social Media</p>
+                  <div className="flex gap-2">
+                    {vendor.socials?.instagram && (
+                      <a
+                        href={`https://instagram.com/${vendor.socials.instagram}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-pink-100 text-pink-800 rounded text-xs hover:bg-pink-200 transition"
+                      >
+                        📷 {vendor.socials.instagram}
+                      </a>
+                    )}
+                    {vendor.socials?.facebook && (
+                      <a
+                        href={`https://facebook.com/${vendor.socials.facebook}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs hover:bg-blue-200 transition"
+                      >
+                        👤 {vendor.socials.facebook}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -151,6 +270,86 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
+          {/* Food Vendor Details */}
+          {vendor.category === 'Food Vendor' && vendor.food && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Food Vendor Details
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600">Food Items</p>
+                  <p className="text-base font-medium text-gray-900">{vendor.food.items}</p>
+                </div>
+                {vendor.food.needPower && (
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm font-medium text-gray-900">
+                      Power Required: {vendor.food.watts}W
+                    </span>
+                  </div>
+                )}
+                {renderImageGallery(vendor.food.photoPaths, 'Food Photos')}
+              </div>
+            </div>
+          )}
+
+          {/* Clothing Vendor Details */}
+          {vendor.category === 'Clothing Vendor' && vendor.clothing && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Clothing Vendor Details
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600">Clothing Type</p>
+                  <p className="text-base font-medium text-gray-900">{vendor.clothing.clothingType}</p>
+                </div>
+                {renderImageGallery(vendor.clothing.photoPaths, 'Clothing Photos')}
+              </div>
+            </div>
+          )}
+
+          {/* Jewelry Vendor Details */}
+          {vendor.category === 'Jewelry Vendor' && vendor.jewelry && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Jewelry Vendor Details
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600">Jewelry Type</p>
+                  <p className="text-base font-medium text-gray-900">{vendor.jewelry.jewelryType}</p>
+                </div>
+                {renderImageGallery(vendor.jewelry.photoPaths, 'Jewelry Photos')}
+              </div>
+            </div>
+          )}
+
+          {/* Craft Booth Details */}
+          {vendor.category === 'Craft Booth' && vendor.craft && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Craft Booth Details
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600">Craft Details</p>
+                  <p className="text-base font-medium text-gray-900">{vendor.craft.details}</p>
+                </div>
+                {vendor.craft.needPower && (
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm font-medium text-gray-900">
+                      Power Required: {vendor.craft.watts}W
+                    </span>
+                  </div>
+                )}
+                {renderImageGallery(vendor.craft.photoPaths, 'Craft Photos')}
+              </div>
+            </div>
+          )}
+
           {/* Timeline */}
           {vendor.bookingTimeline && (
             <div>
@@ -171,28 +370,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
                     <span className="text-sm text-gray-600">Held Until:</span>
                     <span className="text-sm font-medium text-gray-900">
                       {new Date(vendor.bookingTimeline.heldUntil).toLocaleString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Category Specific Info */}
-          {vendor.category === 'Food Vendor' && vendor.food && (
-            <div>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Food Vendor Details
-              </h4>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <div>
-                  <p className="text-sm text-gray-600">Food Items</p>
-                  <p className="text-base font-medium text-gray-900">{vendor.food.items}</p>
-                </div>
-                {vendor.food.needPower && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
-                      Power Required: {vendor.food.watts}W
                     </span>
                   </div>
                 )}

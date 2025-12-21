@@ -1,6 +1,78 @@
 // src/redux/slices/dashboardSlice.ts
-import { deleteSponsor, deleteVendor, fetchBooths, fetchSponsors, fetchStats, fetchVendors, updateSponsor, updateVendor } from "@/services/dashbord/asyncThunk";
+import { 
+  deleteSponsor, 
+  deleteVendor, 
+  deleteParticipant,
+  deleteVolunteer,
+  fetchBooths, 
+  fetchSponsors, 
+  fetchStats, 
+  fetchVendors,
+  fetchParticipants,
+  fetchVolunteers,
+  updateSponsor, 
+  updateVendor,
+  updateParticipant,
+  updateVolunteer
+} from "@/services/dashbord/asyncThunk";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
+
+// ============================================
+// TYPES
+// ============================================
+
+interface VendorStats {
+  total: number;
+  approved: number;
+  submitted: number;
+  held: number;
+  confirmed: number;
+  expired: number;
+  rejected: number;
+  byCategory: {
+    [key: string]: number;
+  };
+}
+
+interface SponsorStats {
+  total: number;
+  byTier: {
+    [key: string]: number;
+  };
+}
+
+interface BoothStats {
+  total: number;
+  available: number;
+  booked: number;
+  held: number;
+  confirmed: number;
+}
+
+interface ParticipantStats {
+  total: number;
+  byCategory: {
+    [key: string]: number;
+  };
+  byAgeGroup: {
+    [key: string]: number;
+  };
+}
+
+interface VolunteerStats {
+  total: number;
+  bySlot: {
+    [key: string]: number;
+  };
+}
+
+interface Stats {
+  vendors: VendorStats;
+  sponsors: SponsorStats;
+  booths: BoothStats;
+  participants: ParticipantStats;
+  volunteers: VolunteerStats;
+}
 
 // ============================================
 // STATE
@@ -10,7 +82,9 @@ export interface DashboardState {
   vendors: any[];
   sponsors: any[];
   booths: any[];
-  stats: any;
+  participants: any[];
+  volunteers: any[];
+  stats: Stats | null;
   loading: boolean;
   error: string | null;
   currentPage: number;
@@ -30,7 +104,9 @@ const initialState: DashboardState = {
   vendors: [],
   sponsors: [],
   booths: [],
-  stats: { total: 0, submitted: 0, approved: 0 },
+  participants: [],
+  volunteers: [],
+  stats: null,
   loading: false,
   error: null,
   currentPage: 1,
@@ -114,12 +190,48 @@ const dashboardSlice = createSlice({
         state.error = (action.payload as string) || "Failed to fetch booths";
       });
 
+    // ===== Fetch Participants =====
+    builder
+      .addCase(fetchParticipants.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchParticipants.fulfilled, (state, action) => {
+        state.loading = false;
+        state.participants = action.payload;
+      })
+      .addCase(fetchParticipants.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to fetch participants";
+      });
+
+    // ===== Fetch Volunteers =====
+    builder
+      .addCase(fetchVolunteers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchVolunteers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.volunteers = action.payload;
+      })
+      .addCase(fetchVolunteers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to fetch volunteers";
+      });
+
     // ===== Fetch Stats =====
     builder
+      .addCase(fetchStats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchStats.fulfilled, (state, action) => {
+        state.loading = false;
         state.stats = action.payload;
       })
       .addCase(fetchStats.rejected, (state, action) => {
+        state.loading = false;
         state.error = (action.payload as string) || "Failed to fetch stats";
       });
 
@@ -163,6 +275,48 @@ const dashboardSlice = createSlice({
       })
       .addCase(deleteSponsor.rejected, (state, action) => {
         state.error = (action.payload as string) || "Failed to delete sponsor";
+      });
+
+    // ===== Update Participant =====
+    builder
+      .addCase(updateParticipant.fulfilled, (state, action) => {
+        const index = state.participants.findIndex(
+          (p) => p._id === action.payload._id
+        );
+        if (index !== -1) state.participants[index] = action.payload;
+      })
+      .addCase(updateParticipant.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to update participant";
+      });
+
+    // ===== Delete Participant =====
+    builder
+      .addCase(deleteParticipant.fulfilled, (state, action) => {
+        state.participants = state.participants.filter((p) => p._id !== action.payload);
+      })
+      .addCase(deleteParticipant.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to delete participant";
+      });
+
+    // ===== Update Volunteer =====
+    builder
+      .addCase(updateVolunteer.fulfilled, (state, action) => {
+        const index = state.volunteers.findIndex(
+          (v) => v._id === action.payload._id
+        );
+        if (index !== -1) state.volunteers[index] = action.payload;
+      })
+      .addCase(updateVolunteer.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to update volunteer";
+      });
+
+    // ===== Delete Volunteer =====
+    builder
+      .addCase(deleteVolunteer.fulfilled, (state, action) => {
+        state.volunteers = state.volunteers.filter((v) => v._id !== action.payload);
+      })
+      .addCase(deleteVolunteer.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to delete volunteer";
       });
   },
 });

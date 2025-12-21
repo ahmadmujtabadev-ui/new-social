@@ -1,10 +1,10 @@
 // src/components/admin/VendorsPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
-import { Search, Eye, Trash2, RefreshCw, Filter } from 'lucide-react';
+import { Eye, Trash2, RefreshCw } from 'lucide-react';
 import VendorDetailsModal from './VendorDetailsModal';
 import { deleteVendor, fetchVendors, updateVendor } from '@/services/dashbord/asyncThunk';
-import { setFilters } from '@/redux/slices/dashboardSlice';
+// import { setFilters } from '@/redux/slices/dashboardSlice';
 
 const VendorsPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -12,8 +12,8 @@ const VendorsPage: React.FC = () => {
     (state) => state.dashboard
   );
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  // const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus] = useState('');
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -27,10 +27,10 @@ const VendorsPage: React.FC = () => {
     );
   };
 
-  const handleSearch = () => {
-    dispatch(setFilters({ search: searchTerm, status: filterStatus }));
-    loadVendors();
-  };
+  // const handleSearch = () => {
+  //   dispatch(setFilters({ search: searchTerm, status: filterStatus }));
+  //   loadVendors();
+  // };
 
   const handleStatusChange = async (vendorId: string, newStatus: string) => {
     try {
@@ -79,8 +79,7 @@ const VendorsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      {/* <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -112,9 +111,8 @@ const VendorsPage: React.FC = () => {
               <Filter className="w-4 h-4" />
               Filter
             </button>
-          </div>
-        </div>
-      </div>
+          </div>ff
+        </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -122,7 +120,7 @@ const VendorsPage: React.FC = () => {
           { label: 'Total Vendors', value: vendors.length, color: 'blue' },
           { label: 'Held', value: vendors.filter(v => v.status === 'held').length, color: 'yellow' },
           { label: 'Approved', value: vendors.filter(v => v.status === 'approved').length, color: 'green' },
-          { label: 'Expired', value: vendors.filter(v => v.status === 'expired').length, color: 'red' },
+          { label: 'Available', value: vendors.filter(v => v.status === 'available').length, color: 'red' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-lg border border-gray-200 p-4">
             <p className="text-sm text-gray-600">{stat.label}</p>
@@ -198,19 +196,19 @@ const VendorsPage: React.FC = () => {
                             vendor.status === 'approved'
                               ? '#DEF7EC'
                               : vendor.status === 'held'
-                              ? '#FEF3C7'
-                              : '#FEE2E2',
+                                ? '#FEF3C7'
+                                : '#FEE2E2',
                           color:
                             vendor.status === 'approved'
                               ? '#03543F'
                               : vendor.status === 'held'
-                              ? '#92400E'
-                              : '#991B1B',
+                                ? '#92400E'
+                                : '#991B1B',
                         }}
                       >
                         <option value="held">Held</option>
                         <option value="approved">Approved</option>
-                        <option value="expired">Expired</option>
+                        <option value="available">Available</option>
                       </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">

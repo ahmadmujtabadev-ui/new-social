@@ -1,6 +1,6 @@
 // src/components/admin/DashboardHome.tsx
 import React, { useEffect } from 'react';
-import { useAppDispatch } from '@/hooks/hooks';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import {
   Users,
   Trophy,
@@ -14,7 +14,8 @@ import { fetchSponsors, fetchStats, fetchVendors } from '@/services/dashbord/asy
 
 const DashboardHome: React.FC = () => {
   const dispatch = useAppDispatch();
-  // const { stats, vendors, sponsors, loading } = useAppSelector((state) => state.dashboard);
+  const { stats, vendors, loading } = useAppSelector((state) => state.dashboard);
+  console.log("stats",stats)
 
   useEffect(() => {
     dispatch(fetchStats());
@@ -22,7 +23,7 @@ const DashboardHome: React.FC = () => {
     dispatch(fetchSponsors());
   }, [dispatch]);
 
-  // const recentVendors = vendors.slice(0, 5);
+  const recentVendors = vendors.slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -40,7 +41,9 @@ const DashboardHome: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Vendors</p>
-              {/* <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p> */}
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {stats?.vendors?.total || 0}
+              </p>
               <p className="text-sm text-green-600 mt-1">↑ Active registrations</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -53,7 +56,9 @@ const DashboardHome: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Approved</p>
-              {/* <p className="text-3xl font-bold text-gray-900 mt-2">{stats.approved}</p> */}
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {stats?.vendors?.approved || 0}
+              </p>
               <p className="text-sm text-green-600 mt-1">✓ Confirmed vendors</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -66,7 +71,9 @@ const DashboardHome: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending</p>
-              {/* <p className="text-3xl font-bold text-gray-900 mt-2">{stats.submitted}</p> */}
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {stats?.vendors?.submitted || 0}
+              </p>
               <p className="text-sm text-yellow-600 mt-1">⏳ Awaiting approval</p>
             </div>
             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -79,7 +86,9 @@ const DashboardHome: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Sponsors</p>
-              {/* <p className="text-3xl font-bold text-gray-900 mt-2">{sponsors.length}</p> */}
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {stats?.sponsors?.total || 0}
+              </p>
               <p className="text-sm text-purple-600 mt-1">★ Active partnerships</p>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -100,21 +109,27 @@ const DashboardHome: React.FC = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Available</span>
+              <span className="text-sm font-medium text-green-600">
+                {stats?.booths?.available || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Held</span>
               <span className="text-sm font-medium text-yellow-600">
-                {/* {vendors.filter(v => v.status === 'held').length} */}
+                {stats?.booths?.held || 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Approved</span>
+              <span className="text-sm text-gray-600">Booked</span>
+              <span className="text-sm font-medium text-blue-600">
+                {stats?.booths?.booked || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Confirmed</span>
               <span className="text-sm font-medium text-green-600">
-                {/* {vendors.filter(v => v.status === 'approved').length} */}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Expired</span>
-              <span className="text-sm font-medium text-red-600">
-                {/* {vendors.filter(v => v.status === 'expired').length} */}
+                {stats?.booths?.confirmed || 0}
               </span>
             </div>
           </div>
@@ -131,19 +146,19 @@ const DashboardHome: React.FC = () => {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Platinum</span>
               <span className="text-sm font-medium text-purple-600">
-                {/* {sponsors.filter(s => s.category?.includes('PLATINUM')).length} */}
+                {stats?.sponsors?.byTier?.['PLATINUM SPONSOR'] || 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Gold</span>
               <span className="text-sm font-medium text-yellow-600">
-                {/* {sponsors.filter(s => s.category?.includes('GOLD')).length} */}
+                {stats?.sponsors?.byTier?.['GOLD SPONSOR'] || 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Silver</span>
               <span className="text-sm font-medium text-gray-600">
-                {/* {sponsors.filter(s => s.category?.includes('SILVER')).length} */}
+                {stats?.sponsors?.byTier?.['SILVER SPONSOR'] || 0}
               </span>
             </div>
           </div>
@@ -154,25 +169,31 @@ const DashboardHome: React.FC = () => {
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Categories</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Vendor Categories</h3>
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Food Vendors</span>
               <span className="text-sm font-medium text-gray-900">
-                {/* {vendors.filter(v => v.category === 'Food Vendor').length} */}
+                {stats?.vendors?.byCategory?.['Food Vendor'] || 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Craft Booths</span>
               <span className="text-sm font-medium text-gray-900">
-                {/* {vendors.filter(v => v.category === 'Craft Booth').length} */}
+                {stats?.vendors?.byCategory?.['Craft Booth'] || 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Others</span>
+              <span className="text-sm text-gray-600">Clothing</span>
               <span className="text-sm font-medium text-gray-900">
-                {/* {vendors.filter(v => !['Food Vendor', 'Craft Booth'].includes(v.category)).length} */}
+                {stats?.vendors?.byCategory?.['Clothing Vendor'] || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Jewelry</span>
+              <span className="text-sm font-medium text-gray-900">
+                {stats?.vendors?.byCategory?.['Jewelry Vendor'] || 0}
               </span>
             </div>
           </div>
@@ -190,7 +211,7 @@ const DashboardHome: React.FC = () => {
             View All →
           </Link>
         </div>
-        {/* <div className="p-6">
+        <div className="p-6">
           {loading ? (
             <div className="text-center py-8 text-gray-500">Loading...</div>
           ) : recentVendors.length === 0 ? (
@@ -213,10 +234,14 @@ const DashboardHome: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">Booth #{vendor.boothNumber}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        Booth #{vendor.boothNumber || 'N/A'}
+                      </p>
                       <p className="text-xs text-gray-500">
                         {vendor.bookingTimeline?.submittedAt
                           ? new Date(vendor.bookingTimeline.submittedAt).toLocaleDateString()
+                          : vendor.createdAt
+                          ? new Date(vendor.createdAt).toLocaleDateString()
                           : 'N/A'}
                       </p>
                     </div>
@@ -226,7 +251,11 @@ const DashboardHome: React.FC = () => {
                           ? 'bg-green-100 text-green-800'
                           : vendor.status === 'held'
                           ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
+                          : vendor.status === 'confirmed'
+                          ? 'bg-blue-100 text-blue-800'
+                          : vendor.status === 'expired'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`}
                     >
                       {vendor.status}
@@ -236,11 +265,11 @@ const DashboardHome: React.FC = () => {
               ))}
             </div>
           )}
-        </div> */}
+        </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
         <Link
           href="/admin/vendors"
           className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition group"
@@ -270,8 +299,8 @@ const DashboardHome: React.FC = () => {
             </div>
           </div>
         </Link>
-
-        {/* <Link
+{/* 
+        <Link
           href="/admin/booths"
           className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition group"
         >

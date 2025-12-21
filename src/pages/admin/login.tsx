@@ -10,19 +10,9 @@ const AdminLogin: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const { loading, error } = useAppSelector((state) => state.admin);
+  const { loading } = useAppSelector((state) => state.admin);
 
   const [formData, setFormData] = useState({ email: "", password: "" });
-
-// useEffect(() => {
-//   // redirect only if token exists OR redux says authenticated
-//   if (typeof window === "undefined") return;
-
-//   const token = localStorage.getItem("access_token");
-//   if (token || isAuthenticated) {
-//     router.replace("/admin/admin"); // ✅ keep single dashboard route
-//   }
-// }, [isAuthenticated, router]);
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -30,7 +20,6 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     const result = await dispatch(loginAsync(formData)).unwrap();
 
-    // ✅ IMPORTANT: persist token before redirect
     if (result?.accessToken) {
       console.log("Login successful, token:", result.accessToken);
       localStorage.setItem("access_token", result.accessToken);
@@ -44,8 +33,6 @@ const handleSubmit = async (e: React.FormEvent) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // if (error) dispatch(clearAuthError());
   };
 
   return (
@@ -60,12 +47,6 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
 
         <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-8">
-          {error && (
-            <div className="mb-6 p-3 rounded-lg border border-red-700 bg-red-900/40 text-red-200 text-sm">
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">

@@ -5,6 +5,8 @@
 // Base backend API (your Node server)
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'https://social-be-roan.vercel.app';
+  // http://localhost:5000/
+  // https://social-be-roan.vercel.app
 
 // Public sheet ID extracted from your URL
 export const GOOGLE_SHEET_ID =
