@@ -26,7 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Vendors', href: '/admin/vendors', icon: Users },
   { name: 'Sponsors', href: '/admin/sponsors', icon: Trophy },
   { name: 'Volunteers', href: '/admin/volunteers', icon: Users },
-  { name: 'Participants', href: '/admin/participants', icon: Trophy },
+  { name: 'Participants', href: '/admin/participants/part', icon: Trophy },
   // { name: 'Booths', href: '/admin/booths', icon: Store },
 ];
 
