@@ -60,7 +60,6 @@ interface FileStore {
 
 const FILE_STORE_KEY = 'vendorFormFiles';
 
-// Store files in memory using a global variable (persists during navigation within the same session)
 const fileStore: { current: FileStore | null } = { current: null };
 
 const saveFilesToMemory = (files: FileStore) => {
@@ -96,7 +95,7 @@ const clearFilesFromMemory = () => {
   fileStore.current = null;
   try {
     sessionStorage.removeItem(FILE_STORE_KEY);
-  } catch {}
+  } catch { }
 };
 
 // ============================================================================
@@ -145,7 +144,7 @@ const getInitialValues = (): VendorFormValues => {
     }
 
     const parsed = JSON.parse(savedData);
-    
+
     return {
       ...createEmptyValues(),
       ...parsed,
@@ -220,15 +219,13 @@ const VendorForm: React.FC = () => {
   const router = useRouter();
   const dispatch = useDispatch();
   const { isLoading, vendorSuccess } = useSelector(selectForms);
-
   const [currentStep, setCurrentStep] = useState(1);
   const [showBoothSuccess, setShowBoothSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  
-  // Reference to track if files have been restored
+  const formikResetRef = useRef<(() => void) | null>(null);
+
   const filesRestoredRef = useRef(false);
 
-  // Load saved step on mount
   useEffect(() => {
     const savedStep = sessionStorage.getItem('vendorFormStep');
     if (savedStep) {
@@ -237,7 +234,6 @@ const VendorForm: React.FC = () => {
     }
   }, []);
 
-  // Restore scroll position
   useEffect(() => {
     const savedScrollPosition = sessionStorage.getItem(SCROLL_KEY);
     if (savedScrollPosition) {
@@ -251,17 +247,45 @@ const VendorForm: React.FC = () => {
   // Handle successful submission
   useEffect(() => {
     if (vendorSuccess) {
-      sessionStorage.removeItem('vendorFormDraft');
-      localStorage.removeItem(BOOTH_KEY);
-      clearFilesFromMemory();
-      dispatch(resetFormState());
-      setCurrentStep(1);
+      const clearForm = async () => {
+        // Clear all storage first
+        sessionStorage.removeItem('vendorFormDraft');
+        sessionStorage.removeItem(FILE_STORE_KEY);
+        sessionStorage.removeItem('vendorFormStep');
+        sessionStorage.removeItem(SCROLL_KEY);
+        localStorage.removeItem(BOOTH_KEY);
+        clearFilesFromMemory();
+
+        // Reset component state
+        setCurrentStep(1);
+        setSubmitError(null);
+        setShowBoothSuccess(false);
+        filesRestoredRef.current = false;
+
+        // Small delay to ensure state is cleared before resetting form
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Reset Formik form
+        if (formikResetRef.current) {
+          formikResetRef.current();
+        }
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Reset Redux state last (after a delay to show success message)
+        setTimeout(() => {
+          dispatch(resetFormState());
+        }, 3000);
+      };
+
+      clearForm();
     }
   }, [vendorSuccess, dispatch]);
 
   const goToMap = (values: VendorFormValues) => {
     const cat = values.category ? `?category=${encodeURIComponent(values.category)}` : "";
-    
+
     try {
       // Save files to memory before navigation
       saveFilesToMemory({
@@ -281,7 +305,7 @@ const VendorForm: React.FC = () => {
     } catch (error) {
       console.error('Error saving form state:', error);
     }
-    
+
     router.push(`/booking/page${cat}`);
   };
 
@@ -290,10 +314,10 @@ const VendorForm: React.FC = () => {
     helpers: FormikHelpers<VendorFormValues>
   ) => {
     const currentSchema = validationSchemas[currentStep - 1];
-    
+
     try {
       await currentSchema.validate(values, { abortEarly: false });
-      
+
       // Save files before moving to next step
       saveFilesToMemory({
         businessLogo: values.businessLogo,
@@ -302,10 +326,10 @@ const VendorForm: React.FC = () => {
         jewelryPhotos: values.jewelryPhotos,
         craftPhotos: values.craftPhotos,
       });
-      
+
       setCurrentStep((prev) => Math.min(prev + 1, 3));
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      
+
       saveFormDraft(values);
     } catch (error) {
       if (error instanceof Yup.ValidationError) {
@@ -333,33 +357,59 @@ const VendorForm: React.FC = () => {
     }
   };
 
+
+  const clearAllFormState = () => {
+    sessionStorage.removeItem("vendorFormDraft");
+    sessionStorage.removeItem(FILE_STORE_KEY);
+    sessionStorage.removeItem("vendorFormStep");
+    sessionStorage.removeItem(SCROLL_KEY);
+    localStorage.removeItem(BOOTH_KEY);
+    clearFilesFromMemory();
+
+    setCurrentStep(1);
+    setSubmitError(null);
+    setShowBoothSuccess(false);
+    filesRestoredRef.current = false;
+  };
+
+
   const handleSubmit = async (
     values: VendorFormValues,
+    helpers: FormikHelpers<VendorFormValues>
+
   ) => {
     setSubmitError(null);
-
     try {
-      console.log('Form values before submit:', values);
-      
-      // Pass the raw values object to Redux thunk
-      // The thunk will create the FormData
       await dispatch(submitVendorAsync(values) as any);
-      
+      clearAllFormState();
+      helpers.resetForm({ values: createEmptyValues() });
+
     } catch (error) {
       console.error('Submission error:', error);
       setSubmitError('An error occurred during submission. Please try again.');
     }
   };
 
-  const handleReset = (resetForm: () => void) => {
-    resetForm();
-    sessionStorage.removeItem('vendorFormDraft');
+  const handleReset = (resetForm: any) => {
+    // clear storage first
+    sessionStorage.removeItem("vendorFormDraft");
+    sessionStorage.removeItem(FILE_STORE_KEY);
+    sessionStorage.removeItem("vendorFormStep");
+    sessionStorage.removeItem(SCROLL_KEY);
     localStorage.removeItem(BOOTH_KEY);
     clearFilesFromMemory();
+
     setSubmitError(null);
     setCurrentStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowBoothSuccess(false);
+    filesRestoredRef.current = false;
+
+    // IMPORTANT: reset to EMPTY values (not original initialValues)
+    resetForm({ values: createEmptyValues() });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
 
   const steps = [
     { number: 1, title: "Business Details", description: "Contact & Business Information" },
@@ -388,13 +438,12 @@ const VendorForm: React.FC = () => {
               <React.Fragment key={step.number}>
                 <div className="flex flex-col items-center flex-1">
                   <div
-                    className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-lg md:text-xl transition-all duration-300 ${
-                      currentStep === step.number
-                        ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-black scale-110 shadow-lg shadow-yellow-400/50"
-                        : currentStep > step.number
+                    className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-lg md:text-xl transition-all duration-300 ${currentStep === step.number
+                      ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-black scale-110 shadow-lg shadow-yellow-400/50"
+                      : currentStep > step.number
                         ? "bg-emerald-500 text-white"
                         : "bg-gray-700 text-gray-400"
-                    }`}
+                      }`}
                   >
                     {currentStep > step.number ? (
                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -413,11 +462,10 @@ const VendorForm: React.FC = () => {
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${
-                      currentStep > step.number
-                        ? "bg-gradient-to-r from-emerald-500 to-yellow-400"
-                        : "bg-gray-700"
-                    }`}
+                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${currentStep > step.number
+                      ? "bg-gradient-to-r from-emerald-500 to-yellow-400"
+                      : "bg-gray-700"
+                      }`}
                   />
                 )}
               </React.Fragment>
@@ -445,9 +493,9 @@ const VendorForm: React.FC = () => {
               if (!filesRestoredRef.current) {
                 // Restore files from memory
                 const savedFiles = loadFilesFromMemory();
-                if (savedFiles.businessLogo || savedFiles.foodPhotos.length > 0 || 
-                    savedFiles.clothingPhotos.length > 0 || savedFiles.jewelryPhotos.length > 0 || 
-                    savedFiles.craftPhotos.length > 0) {
+                if (savedFiles.businessLogo || savedFiles.foodPhotos.length > 0 ||
+                  savedFiles.clothingPhotos.length > 0 || savedFiles.jewelryPhotos.length > 0 ||
+                  savedFiles.craftPhotos.length > 0) {
                   setFieldValue('businessLogo', savedFiles.businessLogo);
                   setFieldValue('foodPhotos', savedFiles.foodPhotos);
                   setFieldValue('clothingPhotos', savedFiles.clothingPhotos);
@@ -466,7 +514,7 @@ const VendorForm: React.FC = () => {
                   setShowBoothSuccess(true);
                   setTimeout(() => setShowBoothSuccess(false), 5000);
                 }
-              } catch {}
+              } catch { }
             }, [setFieldValue]);
 
             // Auto-save on value changes (excluding files - they're saved separately)
