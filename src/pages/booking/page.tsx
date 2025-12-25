@@ -18,9 +18,11 @@ interface Table {
   price: number;
 }
 
+type BoothStatusValue = "available" | "held" | "booked" | "confirmed";
+
 interface BoothStatus {
   id: number;
-  status: string;
+  status: BoothStatusValue;
   heldUntil?: string | null;
   heldBy?: string | null;
 }
@@ -84,6 +86,21 @@ const TABLES: Table[] = [
 
 const BOOTH_KEY = "selectedBooth";
 
+function normalizeStatus(raw: any): BoothStatusValue {
+  const s = String(raw ?? "available").trim().toLowerCase();
+
+  // Backwards compatibility if old data still exists:
+  if (s === "approved") return "booked";
+
+  if (s === "available") return "available";
+  if (s === "held") return "held";
+  if (s === "booked") return "booked";
+  if (s === "confirmed") return "confirmed";
+
+  // Fallback:
+  return "available";
+}
+
 export default function SeatingMap() {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [hoveredTable, setHoveredTable] = useState<number | null>(null);
@@ -114,27 +131,26 @@ export default function SeatingMap() {
 
         const data = await res.json();
         console.log("API Response:", data);
-        
-        // Handle both array directly or data.booths
-        const booths = Array.isArray(data) ? data : (Array.isArray(data.booths) ? data.booths : []);
-        
-        if (booths.length > 0) {
-          const statusMap = new Map<number, BoothStatus>();
-          booths.forEach((booth: any) => {
-            if (booth.id) {
-              statusMap.set(booth.id, {
-                id: booth.id,
-                status: booth.status || "available",
-                heldUntil: booth.heldUntil || null,
-                heldBy: booth.heldBy || null,
-              });
-            }
+
+        const booths = Array.isArray(data) ? data : Array.isArray(data.booths) ? data.booths : [];
+
+        const statusMap = new Map<number, BoothStatus>();
+
+        booths.forEach((booth: any) => {
+          const boothId = Number(booth?.id);
+          if (!Number.isFinite(boothId)) return;
+
+          statusMap.set(boothId, {
+            id: boothId,
+            status: normalizeStatus(booth?.status),
+            heldUntil: booth?.heldUntil ?? null,
+            heldBy: booth?.heldBy ?? null,
           });
-          
-          if (mounted) {
-            setBoothStatuses(statusMap);
-            console.log("Booth statuses loaded:", statusMap.size);
-          }
+        });
+
+        if (mounted) {
+          setBoothStatuses(statusMap);
+          console.log("Booth statuses loaded:", statusMap.size);
         }
       } catch (error) {
         console.error("Error fetching booth statuses:", error);
@@ -143,6 +159,7 @@ export default function SeatingMap() {
 
     fetchStatus();
     const id = setInterval(fetchStatus, 10000);
+
     return () => {
       mounted = false;
       clearInterval(id);
@@ -150,42 +167,32 @@ export default function SeatingMap() {
   }, []);
 
   const getBoothStatus = (id: number): BoothStatus => {
-    return boothStatuses.get(id) || { id, status: "available" };
+    return boothStatuses.get(id) || { id, status: "available", heldUntil: null, heldBy: null };
   };
 
+  // IMPORTANT: match API status exactly (no deriving "held" from heldUntil)
   const isBoothUnavailable = (id: number): boolean => {
-    const status = getBoothStatus(id);
-    return status.status === "booked" || status.status === "confirmed";
+    const s = getBoothStatus(id).status;
+    return s === "booked" || s === "confirmed";
   };
 
   const isBoothHeld = (id: number): boolean => {
-    const status = getBoothStatus(id);
-    if (!status.heldUntil) return false;
-    
-    const heldUntil = new Date(status.heldUntil);
-    const now = new Date();
-    return now < heldUntil;
+    const st = getBoothStatus(id);
+    return st.status === "held";
   };
 
   const getStatusDisplay = (status: BoothStatus): { text: string; color: string } => {
     if (status.status === "booked" || status.status === "confirmed") {
-      return { text: "BOOKED", color: "text-gray-600" };
+      return { text: status.status.toUpperCase(), color: "text-gray-300" };
     }
-    
-    if (status.heldUntil) {
-      const heldUntil = new Date(status.heldUntil);
-      const now = new Date();
-      if (now < heldUntil) {
-        return { text: "HELD", color: "text-orange-600" };
-      }
+    if (status.status === "held") {
+      return { text: "HELD", color: "text-orange-400" };
     }
-    
-    return { text: "AVAILABLE", color: "text-green-600" };
+    return { text: "AVAILABLE", color: "text-emerald-400" };
   };
 
   const handleTableClick = (table: Table) => {
-    const matchesCategory =
-      !!normalizedCategory && table.category === normalizedCategory;
+    const matchesCategory = !!normalizedCategory && table.category === normalizedCategory;
     if (!matchesCategory) return;
 
     if (isBoothUnavailable(table.id)) return;
@@ -198,16 +205,11 @@ export default function SeatingMap() {
     if (!selectedTable) return;
     try {
       localStorage.setItem(BOOTH_KEY, JSON.stringify(selectedTable));
-    } catch {
-      // ignore
-    }
+    } catch {}
     router.push("/registration/vendor");
   };
 
-  const hoveredTableData = hoveredTable
-    ? TABLES.find((t) => t.id === hoveredTable)
-    : null;
-
+  const hoveredTableData = hoveredTable ? TABLES.find((t) => t.id === hoveredTable) : null;
   const hoveredStatus = hoveredTable ? getBoothStatus(hoveredTable) : null;
 
   return (
@@ -231,23 +233,13 @@ export default function SeatingMap() {
           <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white rounded-lg shadow-lg max-w-md mx-auto">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-xs text-gray-600 uppercase tracking-wide">
-                  Selected Booth
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  Table {selectedTable.id}
-                </p>
-                <p className="text-xs text-gray-600 capitalize mt-1">
-                  {selectedTable.category} Booth
-                </p>
+                <p className="text-xs text-gray-600 uppercase tracking-wide">Selected Booth</p>
+                <p className="text-2xl font-bold text-gray-900">Table {selectedTable.id}</p>
+                <p className="text-xs text-gray-600 capitalize mt-1">{selectedTable.category} Booth</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-gray-600 uppercase tracking-wide">
-                  Price
-                </p>
-                <p className="text-3xl font-bold text-green-600">
-                  ${selectedTable.price}
-                </p>
+                <p className="text-xs text-gray-600 uppercase tracking-wide">Price</p>
+                <p className="text-3xl font-bold text-green-600">${selectedTable.price}</p>
               </div>
             </div>
             <button
@@ -260,17 +252,8 @@ export default function SeatingMap() {
         )}
 
         <div className="relative w-full bg-gray-800 rounded-lg overflow-hidden shadow-2xl">
-          <div
-            className="relative w-full"
-            style={{ paddingBottom: "56.25%" }}
-          >
-            <Image
-              src="/venue-map.jpg"
-              alt="Venue Seating Map"
-              fill
-              className="object-contain"
-              priority
-            />
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <Image src="/venue-map.jpg" alt="Venue Seating Map" fill className="object-contain" priority />
 
             {/* Tooltip */}
             {hoveredTableData && hoveredStatus && (
@@ -284,30 +267,22 @@ export default function SeatingMap() {
                 }}
               >
                 <div className="text-center">
-                  <p className="text-sm font-bold text-gray-900">
-                    Booth #{hoveredTableData.id}
-                  </p>
+                  <p className="text-sm font-bold text-gray-900">Booth #{hoveredTableData.id}</p>
 
                   {!normalizedCategory ? (
-                    <p className="text-xs text-red-600 mt-1 font-semibold">
-                      Please select a category first
-                    </p>
+                    <p className="text-xs text-red-600 mt-1 font-semibold">Please select a category first</p>
                   ) : hoveredTableData.category !== normalizedCategory ? (
-                    <p className="text-xs text-red-600 mt-1 font-semibold">
-                      Not available for this category
-                    </p>
+                    <p className="text-xs text-red-600 mt-1 font-semibold">Not available for this category</p>
                   ) : (
                     <>
-                      <p className="text-xs text-gray-600 capitalize">
-                        {hoveredTableData.category} Booth
-                      </p>
-                      <p className="text-lg font-bold text-green-600 mt-1">
-                        ${hoveredTableData.price}
-                      </p>
+                      <p className="text-xs text-gray-600 capitalize">{hoveredTableData.category} Booth</p>
+                      <p className="text-lg font-bold text-green-600 mt-1">${hoveredTableData.price}</p>
                       <p className={`text-xs font-semibold mt-1 ${getStatusDisplay(hoveredStatus).color}`}>
                         {getStatusDisplay(hoveredStatus).text}
                       </p>
-                      {hoveredStatus.heldUntil && isBoothHeld(hoveredTableData.id) && (
+
+                      {/* Show heldUntil only when API says HELD */}
+                      {hoveredStatus.status === "held" && hoveredStatus.heldUntil && (
                         <p className="text-xs text-gray-500 mt-1">
                           Until: {new Date(hoveredStatus.heldUntil).toLocaleString()}
                         </p>
@@ -320,10 +295,12 @@ export default function SeatingMap() {
 
             {TABLES.map((table) => {
               const hasCategory = !!normalizedCategory;
-              const matchesCategory =
-                hasCategory && table.category === normalizedCategory;
-              const booked = isBoothUnavailable(table.id);
-              const held = isBoothHeld(table.id);
+              const matchesCategory = hasCategory && table.category === normalizedCategory;
+
+              const boothStatus = getBoothStatus(table.id);
+              const booked = boothStatus.status === "booked" || boothStatus.status === "confirmed";
+              const held = boothStatus.status === "held";
+
               const selected = selectedTable?.id === table.id;
               const hovered = hoveredTable === table.id;
 
@@ -360,23 +337,17 @@ export default function SeatingMap() {
                     height: `${table.height}%`,
                     backgroundColor,
                     borderColor: selected ? "#22c55e" : "transparent",
-                    transform:
-                      hovered && isSelectable && !selected
-                        ? "scale(1.05)"
-                        : "scale(1)",
+                    transform: hovered && isSelectable && !selected ? "scale(1.05)" : "scale(1)",
                     zIndex: selected ? 30 : hovered ? 20 : 10,
-                    fontSize: selected
-                      ? "clamp(6px, 0.8vw, 10px)"
-                      : "clamp(10px, 1.5vw, 16px)",
+                    fontSize: selected ? "clamp(6px, 0.8vw, 10px)" : "clamp(10px, 1.5vw, 16px)",
                     textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
                     cursor: isSelectable ? "pointer" : "not-allowed",
                     opacity: !isSelectable && !selected ? 0.85 : 1,
                   }}
-                  aria-label={`Table ${table.id} - ${table.category} booth - ${
-                    booked ? "booked" : held ? "held" : "available"
-                  }`}
+                  aria-label={`Table ${table.id} - ${table.category} - ${boothStatus.status}`}
                 >
-                  {booked ? "BOOKED" : held ? "HELD" : selected ? "✓" : ""}
+                  {/* FIXED: show HELD as HELD, not BOOKED */}
+                  {booked ? "BOOKED" : held ? "Booked" : selected ? "✓" : ""}
                 </button>
               );
             })}
@@ -385,7 +356,7 @@ export default function SeatingMap() {
 
         <div className="mt-3 sm:mt-4 text-center text-gray-400 text-xs sm:text-sm px-2">
           <p>
-            Hover over booths to see their status: AVAILABLE (green), HELD (orange), or BOOKED (gray).
+            Hover over booths to see their API status: AVAILABLE (green), HELD (orange), BOOKED/CONFIRMED (gray).
             Only available booths in your chosen category can be selected.
           </p>
         </div>

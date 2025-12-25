@@ -9,10 +9,10 @@ import Header from "@/components/Homepage.tsx/header";
 import { TermsCheckboxWithModal } from "@/components/common/TermsModal";
 import { BOOTH_KEY, SCROLL_KEY } from "@/lib/vendorformconfig";
 import ContactBusinessSection from "@/components/vendor/ContactBusinessSection";
-import CategorySection from "@/components/vendor/CategorySection";
 import BoothAndPaymentSection from "@/components/vendor/BoothAndPaymentSection";
 import { resetFormState, selectForms } from "@/redux/slices/userSlice";
 import { submitVendorAsync } from "@/services/auth/asyncThunk";
+import CategorySection from "@/components/vendor/CategorySection";
 
 // ============================================================================
 // TYPES
@@ -29,18 +29,30 @@ interface VendorFormValues {
   instagram: string;
   facebook: string;
   category: string;
+
   foodItems: string;
   needPowerFood: "" | "yes" | "no";
   foodWatts: string;
   foodPhotos: File[];
+
   clothingType: string;
   clothingPhotos: File[];
+
   jewelryType: string;
   jewelryPhotos: File[];
+
   craftDetails: string;
   needPowerCraft: "" | "yes" | "no";
   craftWatts: string;
   craftPhotos: File[];
+
+  // ✅ PROMO FIELDS
+  promoCode: string;
+  amountToPay: number;
+  appliedPromoCode: string;
+  appliedPromoDiscount: number;
+  appliedPromoType: "" | "percent" | "flat";
+
   boothNumber: string;
   notes: string;
   terms: boolean;
@@ -58,30 +70,31 @@ interface FileStore {
 // FILE STORAGE UTILITIES
 // ============================================================================
 
-const FILE_STORE_KEY = 'vendorFormFiles';
-
+const FILE_STORE_KEY = "vendorFormFiles";
 const fileStore: { current: FileStore | null } = { current: null };
 
 const saveFilesToMemory = (files: FileStore) => {
   fileStore.current = files;
-  // Also save file metadata to sessionStorage for display purposes
   try {
-    sessionStorage.setItem(FILE_STORE_KEY, JSON.stringify({
-      businessLogo: files.businessLogo ? { name: files.businessLogo.name, size: files.businessLogo.size } : null,
-      foodPhotos: files.foodPhotos.map(f => ({ name: f.name, size: f.size })),
-      clothingPhotos: files.clothingPhotos.map(f => ({ name: f.name, size: f.size })),
-      jewelryPhotos: files.jewelryPhotos.map(f => ({ name: f.name, size: f.size })),
-      craftPhotos: files.craftPhotos.map(f => ({ name: f.name, size: f.size })),
-    }));
+    sessionStorage.setItem(
+      FILE_STORE_KEY,
+      JSON.stringify({
+        businessLogo: files.businessLogo
+          ? { name: files.businessLogo.name, size: files.businessLogo.size }
+          : null,
+        foodPhotos: files.foodPhotos.map((f) => ({ name: f.name, size: f.size })),
+        clothingPhotos: files.clothingPhotos.map((f) => ({ name: f.name, size: f.size })),
+        jewelryPhotos: files.jewelryPhotos.map((f) => ({ name: f.name, size: f.size })),
+        craftPhotos: files.craftPhotos.map((f) => ({ name: f.name, size: f.size })),
+      })
+    );
   } catch (error) {
-    console.error('Error saving file metadata:', error);
+    console.error("Error saving file metadata:", error);
   }
 };
 
 const loadFilesFromMemory = (): FileStore => {
-  if (fileStore.current) {
-    return fileStore.current;
-  }
+  if (fileStore.current) return fileStore.current;
   return {
     businessLogo: null,
     foodPhotos: [],
@@ -95,7 +108,40 @@ const clearFilesFromMemory = () => {
   fileStore.current = null;
   try {
     sessionStorage.removeItem(FILE_STORE_KEY);
-  } catch { }
+  } catch {}
+};
+
+// ============================================================================
+// PRICING (same idea as old DEFAULT_PRICING)
+// Adjust values if your pricing differs
+// ============================================================================
+
+const DEFAULT_PRICING: Record<string, number> = {
+  "Food Vendor": 350,
+  "Clothing Vendor": 200,
+  "Jewelry Vendor": 200,
+  "Craft Booth": 200,
+};
+
+const getBasePrice = (values: VendorFormValues) => {
+  if (typeof window === "undefined") return 0;
+
+  // Try selected booth price first
+  try {
+    const stored = localStorage.getItem(BOOTH_KEY);
+    if (stored) {
+      const booth = JSON.parse(stored) as { id?: number; price?: number };
+      if (
+        typeof booth?.price === "number" &&
+        (!values.boothNumber || String(booth.id) === values.boothNumber)
+      ) {
+        return booth.price;
+      }
+    }
+  } catch {}
+
+  // Fallback to category default
+  return values.category ? DEFAULT_PRICING[values.category] ?? 0 : 0;
 };
 
 // ============================================================================
@@ -113,30 +159,39 @@ const createEmptyValues = (): VendorFormValues => ({
   instagram: "",
   facebook: "",
   category: "",
+
   foodItems: "",
   needPowerFood: "",
   foodWatts: "",
   foodPhotos: [],
+
   clothingType: "",
   clothingPhotos: [],
+
   jewelryType: "",
   jewelryPhotos: [],
+
   craftDetails: "",
   needPowerCraft: "",
   craftWatts: "",
   craftPhotos: [],
+
+  promoCode: "",
+  amountToPay: 0,
+  appliedPromoCode: "",
+  appliedPromoDiscount: 0,
+  appliedPromoType: "",
+
   boothNumber: "",
   notes: "",
   terms: false,
 });
 
 const getInitialValues = (): VendorFormValues => {
-  if (typeof window === 'undefined') {
-    return createEmptyValues();
-  }
+  if (typeof window === "undefined") return createEmptyValues();
 
   try {
-    const savedData = sessionStorage.getItem('vendorFormDraft');
+    const savedData = sessionStorage.getItem("vendorFormDraft");
     const savedFiles = loadFilesFromMemory();
 
     if (!savedData) {
@@ -144,11 +199,10 @@ const getInitialValues = (): VendorFormValues => {
     }
 
     const parsed = JSON.parse(savedData);
-
     return {
       ...createEmptyValues(),
       ...parsed,
-      ...savedFiles, // Restore actual File objects
+      ...savedFiles,
     };
   } catch {
     return createEmptyValues();
@@ -164,7 +218,9 @@ const step1Schema = Yup.object({
   vendorName: Yup.string().required("Vendor name is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   phone: Yup.string().required("Phone is required"),
-  isOakville: Yup.string().oneOf(["yes", "no"], "Please select Yes or No").required("Please select Yes or No"),
+  isOakville: Yup.string()
+    .oneOf(["yes", "no"], "Please select Yes or No")
+    .required("Please select Yes or No"),
   selectedEvent: Yup.string().required("Please select an event"),
 });
 
@@ -176,10 +232,12 @@ const step2Schema = Yup.object({
   }),
   needPowerFood: Yup.string().when("category", {
     is: "Food Vendor",
-    then: (schema) => schema.oneOf(["yes", "no"]).required("Power requirement is required"),
+    then: (schema) =>
+      schema.oneOf(["yes", "no"]).required("Power requirement is required"),
   }),
   foodWatts: Yup.string().when(["category", "needPowerFood"], {
-    is: (category: string, needPower: string) => category === "Food Vendor" && needPower === "yes",
+    is: (category: string, needPower: string) =>
+      category === "Food Vendor" && needPower === "yes",
     then: (schema) => schema.required("Specify equipment watts"),
   }),
   clothingType: Yup.string().when("category", {
@@ -196,10 +254,12 @@ const step2Schema = Yup.object({
   }),
   needPowerCraft: Yup.string().when("category", {
     is: "Craft Booth",
-    then: (schema) => schema.oneOf(["yes", "no"]).required("Power requirement is required"),
+    then: (schema) =>
+      schema.oneOf(["yes", "no"]).required("Power requirement is required"),
   }),
   craftWatts: Yup.string().when(["category", "needPowerCraft"], {
-    is: (category: string, needPower: string) => category === "Craft Booth" && needPower === "yes",
+    is: (category: string, needPower: string) =>
+      category === "Craft Booth" && needPower === "yes",
     then: (schema) => schema.required("Specify equipment watts"),
   }),
 });
@@ -227,10 +287,10 @@ const VendorForm: React.FC = () => {
   const filesRestoredRef = useRef(false);
 
   useEffect(() => {
-    const savedStep = sessionStorage.getItem('vendorFormStep');
+    const savedStep = sessionStorage.getItem("vendorFormStep");
     if (savedStep) {
       setCurrentStep(parseInt(savedStep, 10));
-      sessionStorage.removeItem('vendorFormStep');
+      sessionStorage.removeItem("vendorFormStep");
     }
   }, []);
 
@@ -248,32 +308,26 @@ const VendorForm: React.FC = () => {
   useEffect(() => {
     if (vendorSuccess) {
       const clearForm = async () => {
-        // Clear all storage first
-        sessionStorage.removeItem('vendorFormDraft');
+        sessionStorage.removeItem("vendorFormDraft");
         sessionStorage.removeItem(FILE_STORE_KEY);
-        sessionStorage.removeItem('vendorFormStep');
+        sessionStorage.removeItem("vendorFormStep");
         sessionStorage.removeItem(SCROLL_KEY);
         localStorage.removeItem(BOOTH_KEY);
         clearFilesFromMemory();
 
-        // Reset component state
         setCurrentStep(1);
         setSubmitError(null);
         setShowBoothSuccess(false);
         filesRestoredRef.current = false;
 
-        // Small delay to ensure state is cleared before resetting form
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Reset Formik form
         if (formikResetRef.current) {
           formikResetRef.current();
         }
 
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: "smooth" });
 
-        // Reset Redux state last (after a delay to show success message)
         setTimeout(() => {
           dispatch(resetFormState());
         }, 3000);
@@ -287,7 +341,6 @@ const VendorForm: React.FC = () => {
     const cat = values.category ? `?category=${encodeURIComponent(values.category)}` : "";
 
     try {
-      // Save files to memory before navigation
       saveFilesToMemory({
         businessLogo: values.businessLogo,
         foodPhotos: values.foodPhotos,
@@ -296,29 +349,38 @@ const VendorForm: React.FC = () => {
         craftPhotos: values.craftPhotos,
       });
 
-      // Save form data (excluding files)
-      const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } = values;
-      console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
-      sessionStorage.setItem('vendorFormDraft', JSON.stringify(dataToSave));
+      const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } =
+        values;
+
+        console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
+      sessionStorage.setItem("vendorFormDraft", JSON.stringify(dataToSave));
       sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
-      sessionStorage.setItem('vendorFormStep', String(currentStep));
+      sessionStorage.setItem("vendorFormStep", String(currentStep));
     } catch (error) {
-      console.error('Error saving form state:', error);
+      console.error("Error saving form state:", error);
     }
 
     router.push(`/booking/page${cat}`);
   };
 
-  const handleNext = async (
-    values: VendorFormValues,
-    helpers: FormikHelpers<VendorFormValues>
-  ) => {
+  const saveFormDraft = (values: VendorFormValues) => {
+    try {
+      const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } =
+        values;
+                console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
+
+      sessionStorage.setItem("vendorFormDraft", JSON.stringify(dataToSave));
+    } catch (error) {
+      console.error("Error saving draft:", error);
+    }
+  };
+
+  const handleNext = async (values: VendorFormValues, helpers: FormikHelpers<VendorFormValues>) => {
     const currentSchema = validationSchemas[currentStep - 1];
 
     try {
       await currentSchema.validate(values, { abortEarly: false });
 
-      // Save files before moving to next step
       saveFilesToMemory({
         businessLogo: values.businessLogo,
         foodPhotos: values.foodPhotos,
@@ -328,7 +390,7 @@ const VendorForm: React.FC = () => {
       });
 
       setCurrentStep((prev) => Math.min(prev + 1, 3));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
 
       saveFormDraft(values);
     } catch (error) {
@@ -344,19 +406,8 @@ const VendorForm: React.FC = () => {
 
   const handlePrevious = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  const saveFormDraft = (values: VendorFormValues) => {
-    try {
-      const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } = values;
-      console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
-      sessionStorage.setItem('vendorFormDraft', JSON.stringify(dataToSave));
-    } catch (error) {
-      console.error('Error saving draft:', error);
-    }
-  };
-
 
   const clearAllFormState = () => {
     sessionStorage.removeItem("vendorFormDraft");
@@ -372,26 +423,19 @@ const VendorForm: React.FC = () => {
     filesRestoredRef.current = false;
   };
 
-
-  const handleSubmit = async (
-    values: VendorFormValues,
-    helpers: FormikHelpers<VendorFormValues>
-
-  ) => {
+  const handleSubmit = async (values: VendorFormValues, helpers: FormikHelpers<VendorFormValues>) => {
     setSubmitError(null);
     try {
       await dispatch(submitVendorAsync(values) as any);
       clearAllFormState();
       helpers.resetForm({ values: createEmptyValues() });
-
     } catch (error) {
-      console.error('Submission error:', error);
-      setSubmitError('An error occurred during submission. Please try again.');
+      console.error("Submission error:", error);
+      setSubmitError("An error occurred during submission. Please try again.");
     }
   };
 
   const handleReset = (resetForm: any) => {
-    // clear storage first
     sessionStorage.removeItem("vendorFormDraft");
     sessionStorage.removeItem(FILE_STORE_KEY);
     sessionStorage.removeItem("vendorFormStep");
@@ -404,12 +448,9 @@ const VendorForm: React.FC = () => {
     setShowBoothSuccess(false);
     filesRestoredRef.current = false;
 
-    // IMPORTANT: reset to EMPTY values (not original initialValues)
     resetForm({ values: createEmptyValues() });
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
 
   const steps = [
     { number: 1, title: "Business Details", description: "Contact & Business Information" },
@@ -420,6 +461,7 @@ const VendorForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-black">
       <Header />
+
       <div className="relative w-full mx-auto px-4 md:px-8 lg:px-20 py-16">
         <div className="text-center mb-12 relative">
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-purple-500/10 to-pink-500/10 blur-3xl -z-10"></div>
@@ -438,16 +480,21 @@ const VendorForm: React.FC = () => {
               <React.Fragment key={step.number}>
                 <div className="flex flex-col items-center flex-1">
                   <div
-                    className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-lg md:text-xl transition-all duration-300 ${currentStep === step.number
-                      ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-black scale-110 shadow-lg shadow-yellow-400/50"
-                      : currentStep > step.number
+                    className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-lg md:text-xl transition-all duration-300 ${
+                      currentStep === step.number
+                        ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-black scale-110 shadow-lg shadow-yellow-400/50"
+                        : currentStep > step.number
                         ? "bg-emerald-500 text-white"
                         : "bg-gray-700 text-gray-400"
-                      }`}
+                    }`}
                   >
                     {currentStep > step.number ? (
                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     ) : (
                       step.number
@@ -462,10 +509,11 @@ const VendorForm: React.FC = () => {
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${currentStep > step.number
-                      ? "bg-gradient-to-r from-emerald-500 to-yellow-400"
-                      : "bg-gray-700"
-                      }`}
+                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${
+                      currentStep > step.number
+                        ? "bg-gradient-to-r from-emerald-500 to-yellow-400"
+                        : "bg-gray-700"
+                    }`}
                   />
                 )}
               </React.Fragment>
@@ -487,41 +535,40 @@ const VendorForm: React.FC = () => {
           {(formikProps) => {
             const { values, errors, touched, setFieldValue, resetForm } = formikProps;
 
-            // Load booth on mount and restore files
             // eslint-disable-next-line react-hooks/rules-of-hooks
             useEffect(() => {
               if (!filesRestoredRef.current) {
-                // Restore files from memory
                 const savedFiles = loadFilesFromMemory();
-                if (savedFiles.businessLogo || savedFiles.foodPhotos.length > 0 ||
-                  savedFiles.clothingPhotos.length > 0 || savedFiles.jewelryPhotos.length > 0 ||
-                  savedFiles.craftPhotos.length > 0) {
-                  setFieldValue('businessLogo', savedFiles.businessLogo);
-                  setFieldValue('foodPhotos', savedFiles.foodPhotos);
-                  setFieldValue('clothingPhotos', savedFiles.clothingPhotos);
-                  setFieldValue('jewelryPhotos', savedFiles.jewelryPhotos);
-                  setFieldValue('craftPhotos', savedFiles.craftPhotos);
+                if (
+                  savedFiles.businessLogo ||
+                  savedFiles.foodPhotos.length > 0 ||
+                  savedFiles.clothingPhotos.length > 0 ||
+                  savedFiles.jewelryPhotos.length > 0 ||
+                  savedFiles.craftPhotos.length > 0
+                ) {
+                  setFieldValue("businessLogo", savedFiles.businessLogo);
+                  setFieldValue("foodPhotos", savedFiles.foodPhotos);
+                  setFieldValue("clothingPhotos", savedFiles.clothingPhotos);
+                  setFieldValue("jewelryPhotos", savedFiles.jewelryPhotos);
+                  setFieldValue("craftPhotos", savedFiles.craftPhotos);
                 }
                 filesRestoredRef.current = true;
               }
 
-              // Load booth from localStorage
               try {
                 const raw = localStorage.getItem(BOOTH_KEY);
                 if (raw) {
                   const booth = JSON.parse(raw);
-                  setFieldValue('boothNumber', String(booth.id));
+                  setFieldValue("boothNumber", String(booth.id));
                   setShowBoothSuccess(true);
                   setTimeout(() => setShowBoothSuccess(false), 5000);
                 }
-              } catch { }
+              } catch {}
             }, [setFieldValue]);
 
-            // Auto-save on value changes (excluding files - they're saved separately)
             // eslint-disable-next-line react-hooks/rules-of-hooks
             useEffect(() => {
               const timer = setTimeout(() => {
-                // Save files to memory
                 saveFilesToMemory({
                   businessLogo: values.businessLogo,
                   foodPhotos: values.foodPhotos,
@@ -529,9 +576,9 @@ const VendorForm: React.FC = () => {
                   jewelryPhotos: values.jewelryPhotos,
                   craftPhotos: values.craftPhotos,
                 });
-                // Save form data
                 saveFormDraft(values);
               }, 1000);
+
               return () => clearTimeout(timer);
             }, [values]);
 
@@ -568,10 +615,11 @@ const VendorForm: React.FC = () => {
                       showBoothSuccess={showBoothSuccess}
                       onGoToMap={() => goToMap(values)}
                       onClearBooth={() => {
-                        setFieldValue('boothNumber', '');
+                        setFieldValue("boothNumber", "");
                         localStorage.removeItem(BOOTH_KEY);
                       }}
                       setFieldValue={setFieldValue}
+                      basePrice={getBasePrice(values)} // ✅ PASS BASE PRICE
                     />
 
                     <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700 rounded-2xl p-6 hover:border-gray-600 transition-colors duration-300">
@@ -581,7 +629,7 @@ const VendorForm: React.FC = () => {
                       <textarea
                         name="notes"
                         value={values.notes}
-                        onChange={(e) => setFieldValue('notes', e.target.value)}
+                        onChange={(e) => setFieldValue("notes", e.target.value)}
                         rows={4}
                         className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200"
                         placeholder="Any additional information you'd like to share..."
@@ -590,8 +638,8 @@ const VendorForm: React.FC = () => {
 
                     <TermsCheckboxWithModal
                       checked={values.terms}
-                      error={touched.terms ? errors.terms : undefined}
-                      onChange={(checked) => setFieldValue('terms', checked)}
+                      error={touched.terms ? (errors.terms as any) : undefined}
+                      onChange={(checked) => setFieldValue("terms", checked)}
                     />
 
                     {submitError && (

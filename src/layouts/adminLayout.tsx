@@ -22,9 +22,10 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/admin/admin', icon: LayoutDashboard },
   { name: 'Vendors', href: '/admin/vendors', icon: Users },
+   { name: 'Booths', href: '/admin/booths/booth', icon: Trophy },
   { name: 'Sponsors', href: '/admin/sponsors', icon: Trophy },
   { name: 'Volunteers', href: '/admin/volunteers', icon: Users },
-  { name: 'Participants', href: '/admin/participants/parth', icon: Trophy },
+  { name: 'Participants', href: '/admin/part', icon: Trophy },
   { name: 'Logout', href: '#', icon: LogOut },
 ];
 

@@ -24,7 +24,7 @@ interface Props {
 }
 
 const EVENT_OPTIONS = [
-  { value: "oakville-eid-2026", label: "oakville-eid-2026", },
+  { value: "oakville-eid-2026", label: "Oakville Eid 2026", },
 ];
 
 const ContactBusinessSection: React.FC<Props> = ({

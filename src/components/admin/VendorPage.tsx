@@ -72,11 +72,10 @@ const VendorsPage: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { label: 'Total Vendors', value: vendors.length },
-          { label: 'Held', value: vendors.filter(v => v.status === 'held').length },
-          { label: 'Approved', value: vendors.filter(v => v.status === 'approved').length },
+          { label: 'Booked', value: vendors.filter(v => v.status === 'held').length },
           { label: 'Available', value: vendors.filter(v => v.status === 'available').length },
         ].map((stat) => (
           <div key={stat.label} className="bg-black rounded-lg border border-yellow-500 p-4">
@@ -147,19 +146,23 @@ const VendorsPage: React.FC = () => {
                       <select
                         value={vendor.status}
                         onChange={(e) => handleStatusChange(vendor._id, e.target.value)}
-                        className={`text-sm px-3 py-1 rounded-full cursor-pointer border focus:ring-2 focus:ring-yellow-500 ${
-                          vendor.status === 'approved'
-                            ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500'
-                            : vendor.status === 'held'
-                            ? 'bg-yellow-400/20 text-yellow-400 border-yellow-400'
-                            : 'bg-gray-700 text-gray-400 border-gray-600'
-                        }`}
+                        className={`text-sm px-3 py-1 rounded-full cursor-pointer border focus:ring-2 focus:ring-yellow-500 bg-black ${vendor.status === "booked"
+                            ? "text-yellow-500 border-yellow-500"
+                            : vendor.status === "held"
+                              ? "text-yellow-400 border-yellow-400"
+                              : vendor.status === "available"
+                                ? "text-yellow-300 border-yellow-300"
+                                : vendor.status === "confirmed"
+                                  ? "text-yellow-600 border-yellow-600"
+                                  : "text-yellow-200 border-yellow-200"
+                          }`}
                       >
-                        <option value="held">Held</option>
-                        <option value="approved">Approved</option>
                         <option value="available">Available</option>
+                        <option value="held">Booked</option>
+                        <option value="confirmed">Confirmed</option>
                       </select>
                     </td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
                         <button
