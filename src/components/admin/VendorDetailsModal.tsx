@@ -1,6 +1,5 @@
-// src/components/admin/VendorDetailsModal.tsx
 import React from 'react';
-import { X, Mail, Phone, MapPin, Calendar, Download, Image as ImageIcon, Zap } from 'lucide-react';
+import { X, Mail, Phone, MapPin, Calendar, Download, Image, Zap } from 'lucide-react';
 
 interface VendorDetailsModalProps {
   vendor: any;
@@ -22,7 +21,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
     document.body.removeChild(link);
   };
 
-  // Helper to render image gallery
   const renderImageGallery = (paths: string[], title: string) => {
     if (!paths || paths.length === 0) return null;
 
@@ -50,7 +48,7 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
                     className="p-2 bg-yellow-500 rounded-full hover:bg-yellow-400 transition"
                     title="View full size"
                   >
-                    <ImageIcon className="w-4 h-4 text-black" />
+                    <Image className="w-4 h-4 text-black" />
                   </button>
                   <button
                     onClick={() => handleDownload(path, `${title}-${index + 1}.jpg`)}
@@ -69,9 +67,8 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-      <div className="bg-black rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-yellow-500">
-        {/* Header */}
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pb-20 md:pb-4 bg-black/90 backdrop-blur-sm">
+      <div className="bg-black rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] md:max-h-[90vh] overflow-y-auto border border-yellow-500">
         <div className="sticky top-0 bg-black border-b border-yellow-500 px-6 py-4 flex items-center justify-between z-10">
           <h3 className="text-xl font-bold text-yellow-500">Vendor Details</h3>
           <button
@@ -82,9 +79,7 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Business Logo */}
           {vendor.businessLogoPath && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -110,7 +105,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
-          {/* Basic Info */}
           <div>
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Basic Information
@@ -135,23 +129,9 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
                 <p className="text-sm text-gray-400">Booth Number</p>
                 <p className="text-2xl font-bold text-yellow-500">#{vendor.boothNumber}</p>
               </div>
-
-              <div>
-                <p className="text-sm text-gray-400">Status</p>
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                  vendor.status === 'approved' ? 'bg-yellow-500/20 text-yellow-500' :
-                  vendor.status === 'held' ? 'bg-yellow-400/20 text-yellow-400' :
-                  vendor.status === 'confirmed' ? 'bg-yellow-500/20 text-yellow-500' :
-                  vendor.status === 'expired' ? 'bg-gray-700 text-gray-400' :
-                  'bg-gray-700 text-gray-400'
-                }`}>
-                  {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* Contact Information */}
           <div>
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Contact Information
@@ -204,7 +184,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
                 </div>
               </div>
 
-              {/* Social Media */}
               {(vendor.socials?.instagram || vendor.socials?.facebook) && (
                 <div className="pt-3 border-t border-gray-700">
                   <p className="text-sm text-gray-400 mb-2">Social Media</p>
@@ -235,7 +214,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           </div>
 
-          {/* Pricing Information */}
           {vendor.pricing && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -272,7 +250,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
-          {/* Food Vendor Details */}
           {vendor.category === 'Food Vendor' && vendor.food && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -296,7 +273,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
-          {/* Clothing Vendor Details */}
           {vendor.category === 'Clothing Vendor' && vendor.clothing && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -312,7 +288,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
-          {/* Jewelry Vendor Details */}
           {vendor.category === 'Jewelry Vendor' && vendor.jewelry && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -328,7 +303,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
-          {/* Craft Booth Details */}
           {vendor.category === 'Craft Booth' && vendor.craft && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -352,7 +326,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
-          {/* Timeline */}
           {vendor.bookingTimeline && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -379,7 +352,6 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
             </div>
           )}
 
-          {/* Notes */}
           {vendor.notes && (
             <div>
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -392,8 +364,7 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
           )}
         </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-black border-t border-yellow-500 px-6 py-4">
+        <div className="sticky bottom-0 bg-black border-t border-yellow-500 px-6 py-4 mb-16 md:mb-0">
           <button
             onClick={onClose}
             className="w-full px-4 py-2 bg-yellow-500 text-black font-medium rounded-lg hover:bg-yellow-400 transition"
@@ -406,4 +377,4 @@ const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor, onClose
   );
 };
 
-export default VendorDetailsModal;  
+export default VendorDetailsModal;

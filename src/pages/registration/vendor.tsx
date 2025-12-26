@@ -423,17 +423,18 @@ const VendorForm: React.FC = () => {
     filesRestoredRef.current = false;
   };
 
-  const handleSubmit = async (values: VendorFormValues, helpers: FormikHelpers<VendorFormValues>) => {
-    setSubmitError(null);
-    try {
-      await dispatch(submitVendorAsync(values) as any);
-      clearAllFormState();
-      helpers.resetForm({ values: createEmptyValues() });
-    } catch (error) {
-      console.error("Submission error:", error);
-      setSubmitError("An error occurred during submission. Please try again.");
-    }
-  };
+    const handleSubmit = async (values: any, helpers: FormikHelpers<VendorFormValues>) => {
+      console.log("values", values)
+      setSubmitError(null);
+      try {
+        await dispatch(submitVendorAsync(values) as any);
+        clearAllFormState();
+        helpers.resetForm({ values: createEmptyValues() });
+      } catch (error) {
+        console.error("Submission error:", error);
+        setSubmitError("An error occurred during submission. Please try again.");
+      }
+    };
 
   const handleReset = (resetForm: any) => {
     sessionStorage.removeItem("vendorFormDraft");

@@ -30,7 +30,19 @@ interface VendorFormData {
   boothNumber: string;
   notes: string;
   terms: boolean;
+  promoCode: string;
+  amountToPay: string;
+  appliedPromoCode: string;
+  appliedPromoType: string
+  appliedPromoDiscount: string    
 }
+
+// ADD THESE PROMO FIELDS:
+// 'promoCode',
+// 'amountToPay',
+// 'appliedPromoCode',
+// 'appliedPromoDiscount',
+// 'appliedPromoType',
 
 export const submitVendorAsync = createAsyncThunk(
   "forms/vendor/submit",
@@ -66,6 +78,12 @@ export const submitVendorAsync = createAsyncThunk(
         'craftWatts',
         'boothNumber',
         'notes',
+        // ADD THESE PROMO FIELDS:
+        'promoCode',
+        'amountToPay',
+        'appliedPromoCode',
+        'appliedPromoDiscount',
+        'appliedPromoType',
       ];
 
       textFields.forEach((field) => {
@@ -124,7 +142,7 @@ export const submitVendorAsync = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       console.error('Submit vendor error:', error);
-      
+
       if (error.response?.data) {
         return rejectWithValue(error.response.data);
       } else if (error.message) {
@@ -146,7 +164,7 @@ export const submitSponsorAsync = createAsyncThunk(
       }
 
       const formData = new FormData();
-      
+
       Object.entries(data).forEach(([key, value]) => {
         if (value instanceof File) {
           formData.append(key, value);
@@ -156,7 +174,7 @@ export const submitSponsorAsync = createAsyncThunk(
       });
 
       const response = await authBaseService.submitSponsor(formData);
-      
+
       if (response.data?.success === false) {
         return rejectWithValue(response.data);
       }
@@ -184,7 +202,7 @@ export const submitParticipantAsync = createAsyncThunk(
       }
 
       const response = await authBaseService.submitParticipant(data);
-      
+
       if (response.data?.success === false) {
         return rejectWithValue(response.data);
       }
@@ -212,7 +230,7 @@ export const submitVolunteerAsync = createAsyncThunk(
       }
 
       const response = await authBaseService.submitVolunteer(data);
-      
+
       if (response.data?.success === false) {
         return rejectWithValue(response.data);
       }
