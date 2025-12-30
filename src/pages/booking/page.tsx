@@ -34,6 +34,9 @@ const CATEGORY_COLORS: Record<BoothCategory, string> = {
   food: "rgba(210, 180, 140, 0.7)",
 };
 
+// If you want HELD to appear as BOOKED on the map (gray + locked):
+const HELD_SHOWS_AS_BOOKED = true;
+
 const TABLES: Table[] = [
   { id: 17, category: "craft", x: 15, y: 18, width: 5, height: 8, price: 350 },
   { id: 16, category: "craft", x: 22, y: 18, width: 5, height: 8, price: 200 },
@@ -76,7 +79,6 @@ const TABLES: Table[] = [
   { id: 25, category: "food", x: 23, y: 78, width: 5, height: 8, price: 400 },
 
   { id: 26, category: "craft", x: 35, y: 78, width: 5, height: 8, price: 250 },
-
   { id: 1, category: "craft", x: 58, y: 78, width: 5, height: 8, price: 250 },
 
   { id: 2, category: "jewelry", x: 72, y: 78, width: 5, height: 8, price: 400 },
@@ -89,16 +91,20 @@ const BOOTH_KEY = "selectedBooth";
 function normalizeStatus(raw: any): BoothStatusValue {
   const s = String(raw ?? "available").trim().toLowerCase();
 
-  // Backwards compatibility if old data still exists:
-  if (s === "approved") return "booked";
+  if (s === "paid" || s === "confirmed") return "confirmed";
 
-  if (s === "available") return "available";
+  if (s === "approved" || s === "under_review" || s === "booked") return "booked";
+
   if (s === "held") return "held";
-  if (s === "booked") return "booked";
-  if (s === "confirmed") return "confirmed";
+  if (s === "available") return "available";
 
-  // Fallback:
   return "available";
+}
+
+function parseDateMaybe(value: any): Date | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isFinite(d.getTime()) ? d : null;
 }
 
 export default function SeatingMap() {
@@ -125,33 +131,57 @@ export default function SeatingMap() {
 
     const fetchStatus = async () => {
       try {
-        const url = `${API_BASE_URL}/api/v1/booth`;
+        // Your vendor list endpoint response: { items: [...] }
+        const url = `${API_BASE_URL}/api/v1/vendor?limit=2000`;
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) return;
 
         const data = await res.json();
-        console.log("API Response:", data);
 
-        const booths = Array.isArray(data) ? data : Array.isArray(data.booths) ? data.booths : [];
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const now = new Date();
 
+        // boothNumber -> BoothStatus
         const statusMap = new Map<number, BoothStatus>();
 
-        booths.forEach((booth: any) => {
-          const boothId = Number(booth?.id);
-          if (!Number.isFinite(boothId)) return;
+        for (const v of items) {
+          const boothId = Number(v?.boothNumber);
+          if (!Number.isFinite(boothId)) continue;
 
-          statusMap.set(boothId, {
+          let status = normalizeStatus(v?.status);
+
+          // If held but expired => treat as available (frontend guard)
+          if (status === "held") {
+            const heldUntil = parseDateMaybe(v?.bookingTimeline?.heldUntil);
+            if (heldUntil && heldUntil < now) {
+              status = "available";
+            }
+          }
+
+          // Optional requirement: show HELD as BOOKED on map
+          // (still keep heldUntil for tooltip if you ever want it)
+          const heldUntilISO = v?.bookingTimeline?.heldUntil ?? null;
+          const heldBy = v?._id ?? null;
+
+          const mappedStatus: BoothStatusValue =
+            status === "held" && HELD_SHOWS_AS_BOOKED ? "booked" : status;
+
+          const candidate: BoothStatus = {
             id: boothId,
-            status: normalizeStatus(booth?.status),
-            heldUntil: booth?.heldUntil ?? null,
-            heldBy: booth?.heldBy ?? null,
-          });
-        });
+            status: mappedStatus,
+            heldUntil: heldUntilISO,
+            heldBy,
+          };
+          const rank = (s: BoothStatusValue) =>
+            s === "confirmed" ? 3 : s === "booked" ? 2 : s === "held" ? 1 : 0;
 
-        if (mounted) {
-          setBoothStatuses(statusMap);
-          console.log("Booth statuses loaded:", statusMap.size);
+          const existing = statusMap.get(boothId);
+          if (!existing || rank(candidate.status) > rank(existing.status)) {
+            statusMap.set(boothId, candidate);
+          }
         }
+
+        if (mounted) setBoothStatuses(statusMap);
       } catch (error) {
         console.error("Error fetching booth statuses:", error);
       }
@@ -170,7 +200,6 @@ export default function SeatingMap() {
     return boothStatuses.get(id) || { id, status: "available", heldUntil: null, heldBy: null };
   };
 
-  // IMPORTANT: match API status exactly (no deriving "held" from heldUntil)
   const isBoothUnavailable = (id: number): boolean => {
     const s = getBoothStatus(id).status;
     return s === "booked" || s === "confirmed";
@@ -281,7 +310,6 @@ export default function SeatingMap() {
                         {getStatusDisplay(hoveredStatus).text}
                       </p>
 
-                      {/* Show heldUntil only when API says HELD */}
                       {hoveredStatus.status === "held" && hoveredStatus.heldUntil && (
                         <p className="text-xs text-gray-500 mt-1">
                           Until: {new Date(hoveredStatus.heldUntil).toLocaleString()}
@@ -298,6 +326,7 @@ export default function SeatingMap() {
               const matchesCategory = hasCategory && table.category === normalizedCategory;
 
               const boothStatus = getBoothStatus(table.id);
+
               const booked = boothStatus.status === "booked" || boothStatus.status === "confirmed";
               const held = boothStatus.status === "held";
 
@@ -346,19 +375,12 @@ export default function SeatingMap() {
                   }}
                   aria-label={`Table ${table.id} - ${table.category} - ${boothStatus.status}`}
                 >
-                  {/* FIXED: show HELD as HELD, not BOOKED */}
-                  {booked ? "BOOKED" : held ? "Booked" : selected ? "✓" : ""}
+                  {/* Label */}
+                  {booked ? "BOOKED" : held ? "HELD" : selected ? "✓" : ""}
                 </button>
               );
             })}
           </div>
-        </div>
-
-        <div className="mt-3 sm:mt-4 text-center text-gray-400 text-xs sm:text-sm px-2">
-          <p>
-            Hover over booths to see their API status: AVAILABLE (green), HELD (orange), BOOKED/CONFIRMED (gray).
-            Only available booths in your chosen category can be selected.
-          </p>
         </div>
       </div>
     </div>

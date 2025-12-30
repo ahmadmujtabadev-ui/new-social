@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 
 const GOLD = "#f4c63f";
-const BLUE = "#334895";
 
 function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -178,21 +177,21 @@ function Header() {
             <div className="flex items-center gap-3 sm:gap-4 lg:gap-5">
               <button
                 onClick={() => setShowContactModal(true)}
-                className="hidden md:inline-flex items-center justify-center h-12 lg:h-14 px-6 lg:px-8 rounded-full text-base lg:text-lg font-bold tracking-wide transition-all duration-300 transform hover:scale-105"
+                className="hidden md:inline-flex items-center justify-center h-12 lg:h-14 px-6 lg:px-8 rounded-full text-base lg:text-lg font-bold tracking-wide"
                 style={{
                   border: `2px solid ${GOLD}`,
-                  color: "white",
+                  color: GOLD,
                   background: "transparent",
                   boxShadow: `0 0 20px ${GOLD}44`,
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = GOLD;
-                  e.currentTarget.style.color = BLUE;
-                  e.currentTarget.style.boxShadow = `0 0 30px ${GOLD}99, inset 0 0 20px ${GOLD}33`;
+              onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `${GOLD}22`;
+                  e.currentTarget.style.color = GOLD;
+                  e.currentTarget.style.boxShadow = `0 0 25px ${GOLD}66`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = "white";
+                  e.currentTarget.style.color = GOLD;
                   e.currentTarget.style.boxShadow = `0 0 20px ${GOLD}44`;
                 }}
               >
@@ -283,8 +282,6 @@ function Header() {
             }}
             className="w-full py-4 rounded-full text-xl font-bold tracking-wide transition-all duration-300"
             style={{
-              backgroundColor: GOLD,
-              color: BLUE,
               border: `2px solid ${GOLD}`,
               boxShadow: `0 0 30px ${GOLD}99, inset 0 0 20px ${GOLD}33`,
             }}

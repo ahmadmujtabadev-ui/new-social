@@ -19,7 +19,7 @@ const PROMO_CODES: Record<string, PromoType> = {
     discountType: "percent",
     description: "25% Early Bird Discount",
     startDate: "2025-11-15",
-    endDate: "2025-12-30",
+    endDate: "2026-01-31",
   },
   SAVE50: {
     discount: 50,
@@ -74,8 +74,6 @@ interface BoothAndPaymentProps {
   onGoToMap: () => void;
   onClearBooth: () => void;
   setFieldValue: (field: string, value: any) => void;
-
-  // computed in parent (same logic as old)
   basePrice: number;
 }
 
@@ -99,7 +97,6 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
     return "";
   };
 
-  // Restore applied promo from saved Formik values (after navigation / refresh)
   useEffect(() => {
     const code = String(values.appliedPromoCode || "").trim();
     const type = values.appliedPromoType as "percent" | "flat" | "";
@@ -107,7 +104,6 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
 
     if (!code || !type || !discount) return;
 
-    // only set local state if not already set or different
     if (!appliedPromo || appliedPromo.code !== code) {
       setAppliedPromo({
         code,
@@ -116,7 +112,6 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
         description: PROMO_CODES[code]?.description || "Promo applied",
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.appliedPromoCode, values.appliedPromoType, values.appliedPromoDiscount]);
 
   const discountAmount = useMemo(() => {
@@ -138,7 +133,6 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
       : `$${appliedPromo.discount.toFixed(2)}`
     : "";
 
-  // Keep Formik in sync
   useEffect(() => {
     setFieldValue("amountToPay", discountedPrice);
 

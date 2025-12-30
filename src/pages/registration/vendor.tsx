@@ -108,7 +108,7 @@ const clearFilesFromMemory = () => {
   fileStore.current = null;
   try {
     sessionStorage.removeItem(FILE_STORE_KEY);
-  } catch {}
+  } catch { }
 };
 
 // ============================================================================
@@ -138,7 +138,7 @@ const getBasePrice = (values: VendorFormValues) => {
         return booth.price;
       }
     }
-  } catch {}
+  } catch { }
 
   // Fallback to category default
   return values.category ? DEFAULT_PRICING[values.category] ?? 0 : 0;
@@ -352,7 +352,7 @@ const VendorForm: React.FC = () => {
       const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } =
         values;
 
-        console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
+      console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
       sessionStorage.setItem("vendorFormDraft", JSON.stringify(dataToSave));
       sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
       sessionStorage.setItem("vendorFormStep", String(currentStep));
@@ -367,7 +367,7 @@ const VendorForm: React.FC = () => {
     try {
       const { businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos, ...dataToSave } =
         values;
-                console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
+      console.log(businessLogo, foodPhotos, clothingPhotos, jewelryPhotos, craftPhotos)
 
       sessionStorage.setItem("vendorFormDraft", JSON.stringify(dataToSave));
     } catch (error) {
@@ -423,18 +423,18 @@ const VendorForm: React.FC = () => {
     filesRestoredRef.current = false;
   };
 
-    const handleSubmit = async (values: any, helpers: FormikHelpers<VendorFormValues>) => {
-      console.log("values", values)
-      setSubmitError(null);
-      try {
-        await dispatch(submitVendorAsync(values) as any);
-        clearAllFormState();
-        helpers.resetForm({ values: createEmptyValues() });
-      } catch (error) {
-        console.error("Submission error:", error);
-        setSubmitError("An error occurred during submission. Please try again.");
-      }
-    };
+  const handleSubmit = async (values: any, helpers: FormikHelpers<VendorFormValues>) => {
+    console.log("values", values)
+    setSubmitError(null);
+    try {
+      await dispatch(submitVendorAsync(values) as any);
+      clearAllFormState();
+      helpers.resetForm({ values: createEmptyValues() });
+    } catch (error) {
+      console.error("Submission error:", error);
+      setSubmitError("An error occurred during submission. Please try again.");
+    }
+  };
 
   const handleReset = (resetForm: any) => {
     sessionStorage.removeItem("vendorFormDraft");
@@ -481,13 +481,12 @@ const VendorForm: React.FC = () => {
               <React.Fragment key={step.number}>
                 <div className="flex flex-col items-center flex-1">
                   <div
-                    className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-lg md:text-xl transition-all duration-300 ${
-                      currentStep === step.number
+                    className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-lg md:text-xl transition-all duration-300 ${currentStep === step.number
                         ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-black scale-110 shadow-lg shadow-yellow-400/50"
                         : currentStep > step.number
-                        ? "bg-emerald-500 text-white"
-                        : "bg-gray-700 text-gray-400"
-                    }`}
+                          ? "bg-emerald-500 text-white"
+                          : "bg-gray-700 text-gray-400"
+                      }`}
                   >
                     {currentStep > step.number ? (
                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -510,11 +509,10 @@ const VendorForm: React.FC = () => {
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${
-                      currentStep > step.number
+                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${currentStep > step.number
                         ? "bg-gradient-to-r from-emerald-500 to-yellow-400"
                         : "bg-gray-700"
-                    }`}
+                      }`}
                   />
                 )}
               </React.Fragment>
@@ -564,7 +562,7 @@ const VendorForm: React.FC = () => {
                   setShowBoothSuccess(true);
                   setTimeout(() => setShowBoothSuccess(false), 5000);
                 }
-              } catch {}
+              } catch { }
             }, [setFieldValue]);
 
             // eslint-disable-next-line react-hooks/rules-of-hooks
