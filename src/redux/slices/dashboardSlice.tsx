@@ -1,19 +1,23 @@
 // src/redux/slices/dashboardSlice.ts
-import { 
-  deleteSponsor, 
-  deleteVendor, 
+import {
+  deleteSponsor,
+  deleteVendor,
   deleteParticipant,
   deleteVolunteer,
-  fetchBooths, 
-  fetchSponsors, 
-  fetchStats, 
+  fetchBooths,
+  fetchSponsors,
+  fetchStats,
   fetchVendors,
   fetchParticipants,
   fetchVolunteers,
-  updateSponsor, 
+  updateSponsor,
   updateVendor,
   updateParticipant,
-  updateVolunteer
+  updateVolunteer,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  fetchEvents
 } from "@/services/dashbord/asyncThunk";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
@@ -82,6 +86,7 @@ export interface DashboardState {
   vendors: any[];
   sponsors: any[];
   booths: any[];
+  events: any[];
   participants: any[];
   volunteers: any[];
   stats: Stats | null;
@@ -106,6 +111,7 @@ const initialState: DashboardState = {
   booths: [],
   participants: [],
   volunteers: [],
+  events: [],
   stats: null,
   loading: false,
   error: null,
@@ -317,6 +323,56 @@ const dashboardSlice = createSlice({
       })
       .addCase(deleteVolunteer.rejected, (state, action) => {
         state.error = (action.payload as string) || "Failed to delete volunteer";
+      });
+    // ===== Fetch Events =====
+    builder
+      .addCase(fetchEvents.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEvents.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events = action.payload;
+      })
+      .addCase(fetchEvents.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to fetch events";
+      });
+
+    // ===== Create Event =====
+    builder
+      .addCase(createEvent.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createEvent.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events.unshift(action.payload);
+      })
+      .addCase(createEvent.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to create event";
+      });
+
+    // ===== Update Event =====
+    builder
+      .addCase(updateEvent.fulfilled, (state, action) => {
+        const index = state.events.findIndex(
+          (e) => e._id === action.payload._id
+        );
+        if (index !== -1) state.events[index] = action.payload;
+      })
+      .addCase(updateEvent.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to update event";
+      });
+
+    // ===== Delete Event =====
+    builder
+      .addCase(deleteEvent.fulfilled, (state, action) => {
+        state.events = state.events.filter((e) => e._id !== action.payload);
+      })
+      .addCase(deleteEvent.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to delete event";
       });
   },
 });

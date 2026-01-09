@@ -233,7 +233,6 @@ export default function EventSection() {
                   </div>
                 </div>
 
-                {/* Right: CTA block */}
                 <div className="md:col-span-2 flex flex-col items-stretch justify-between gap-4 md:gap-6">
                   <div className="bg-gradient-to-b from-[#f0b400]/15 via-[#f0b400]/5 to-transparent rounded-2xl border border-[#f0b400]/50 p-5 flex flex-col gap-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-[#f0b400]/80">
@@ -256,7 +255,6 @@ export default function EventSection() {
                         {event.primaryCtaLabel}
                       </Link>
 
-                      {/* 🔥 Secondary CTA - Open New Tab */}
                       <Link
                         href={event.secondaryCtaHref}
                         target="_blank"

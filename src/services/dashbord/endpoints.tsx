@@ -8,7 +8,7 @@ class DashboardService extends HttpService {
   private readonly sponsorPrefix = "api/v1/sponsor";
   private readonly participantPrefix = "api/v1/participants";
   private readonly volunteerPrefix = "api/v1/volunteer";
-
+  private readonly eventPrefix = "api/v1/event";
   // ============================================
   // VENDORS
   // ============================================
@@ -66,6 +66,22 @@ class DashboardService extends HttpService {
     this.get(`${this.vendorPrefix}/booths`, params);
 
   stats = () => this.post(`${this.vendorPrefix}/getallstats`, {});
+
+
+  events = (params: QueryParams = {}) => 
+    this.get(`${this.eventPrefix}`, params);
+  
+  getEvent = (id: string) => 
+    this.get(`${this.eventPrefix}/${id}`, {});
+  
+  createEvent = (eventData: any) =>
+    this.post(`${this.eventPrefix}`, eventData);
+  
+  updateEvent = (id: string, updates: any) =>
+    this.put(`${this.eventPrefix}/${id}`, updates);
+
+  deleteEvent = (id: string) =>
+    this.delete(`${this.eventPrefix}/${id}`);
 }
 
 export const dashboardService = new DashboardService();

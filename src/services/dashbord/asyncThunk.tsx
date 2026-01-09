@@ -219,3 +219,57 @@ export const fetchStats = createAsyncThunk(
     }
   }
 );
+
+
+export const fetchEvents = createAsyncThunk(
+  "dashboard/fetchEvents",
+  async (_: void, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.events();
+      console.log("Fetched events data:", res);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch events");
+    }
+  }
+);
+
+export const createEvent = createAsyncThunk(
+  "dashboard/createEvent",
+  async (eventData: any, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.createEvent(eventData);
+      return res.data || res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to create event");
+    }
+  }
+);
+
+export const updateEvent = createAsyncThunk(
+  "dashboard/updateEvent",
+  async ({ id, updates }: { id: string; updates: Partial<any> }, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.updateEvent(id, updates);
+      return res.data || res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update event");
+    }
+  }
+);
+
+export const deleteEvent = createAsyncThunk(
+  "dashboard/deleteEvent",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      await dashboardService.deleteEvent(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to delete event");
+    }
+  }
+);

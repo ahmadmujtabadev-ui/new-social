@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Vendors', href: '/admin/vendors', icon: Users },
   { name: 'Sponsors', href: '/admin/sponsors', icon: Trophy },
   { name: 'Volunteers', href: '/admin/volunteers', icon: Users },
+  { name: 'Events', href: '/admin/events', icon: Users },
   { name: 'Participants', href: '/admin/part', icon: Trophy },
   { name: 'Logout', href: '#', icon: LogOut },
 ];
@@ -97,7 +98,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             const active = isActive(item.href);
             const Icon = item.icon;
             const isLogout = item.name === 'Logout';
-            
+
             if (isLogout) {
               return (
                 <button
@@ -114,28 +115,25 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 </button>
               );
             }
-            
+
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 className="flex flex-col items-center gap-1 px-2 py-2 transition-all hover:scale-110 active:scale-95"
               >
-                <div className={`p-1.5 rounded-lg transition-all ${
-                  active 
-                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/30' 
+                <div className={`p-1.5 rounded-lg transition-all ${active
+                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/30'
                     : 'bg-yellow-500/10 hover:bg-yellow-500/20'
-                }`}>
-                  <Icon 
-                    className={`h-5 w-5 ${
-                      active ? 'text-black' : 'text-yellow-500/70'
-                    }`} 
+                  }`}>
+                  <Icon
+                    className={`h-5 w-5 ${active ? 'text-black' : 'text-yellow-500/70'
+                      }`}
                   />
                 </div>
-                <span 
-                  className={`text-[10px] font-medium ${
-                    active ? 'text-yellow-500' : 'text-yellow-500/70'
-                  }`}
+                <span
+                  className={`text-[10px] font-medium ${active ? 'text-yellow-500' : 'text-yellow-500/70'
+                    }`}
                 >
                   {item.name}
                 </span>
