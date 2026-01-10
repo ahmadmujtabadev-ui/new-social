@@ -1,7 +1,9 @@
 // components/vendor/ContactBusinessSection.tsx
-import React from "react";
-import { FormikErrors, FormikTouched } from "formik";
-import { Field } from "formik";
+import React, { useEffect, useMemo } from "react";
+import { Field, FormikErrors, FormikTouched } from "formik";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/redux/store";
+import { fetchEvents } from "@/services/dashbord/asyncThunk";
 
 interface VendorFormValues {
   personName: string;
@@ -23,9 +25,15 @@ interface Props {
   setFieldValue: (field: string, value: any) => void;
 }
 
-const EVENT_OPTIONS = [
-  { value: "oakville-eid-2026", label: "Oakville Eid 2026", },
-];
+type UiEventOption = { value: string; label: string };
+
+function getEventId(event: any): string {
+  return String(event?._id ?? event?.id ?? "");
+}
+
+function getEventLabel(event: any): string {
+  return String(event?.title ?? event?.name ?? event?.eventName ?? "Untitled Event");
+}
 
 const ContactBusinessSection: React.FC<Props> = ({
   values,
@@ -33,6 +41,42 @@ const ContactBusinessSection: React.FC<Props> = ({
   touched,
   setFieldValue,
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { events = [], loading, error } = useSelector(
+    (state: RootState) => state.dashboard
+  );
+
+  useEffect(() => {
+    dispatch(fetchEvents());
+  }, [dispatch]);
+
+  // Filter only published and active events for frontend display
+  const publishedEvents = useMemo(() => {
+    const list = Array.isArray(events) ? events : [];
+    return list.filter((event: any) => event?.status === "published" && !!event?.isActive);
+  }, [events]);
+
+  const eventOptions: UiEventOption[] = useMemo(() => {
+    return publishedEvents
+      .map((e: any) => ({
+        value: getEventId(e),
+        label: getEventLabel(e),
+      }))
+      .filter((opt) => opt.value); // remove invalid ids
+  }, [publishedEvents]);
+
+  // If selectedEvent is no longer valid after fetching (event removed/unpublished), reset it
+  useEffect(() => {
+    if (!values.selectedEvent) return;
+    const stillExists = eventOptions.some((o) => o.value === values.selectedEvent);
+    if (!stillExists) {
+      setFieldValue("selectedEvent", "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventOptions]);
+
+  const isSelectDisabled = loading || eventOptions.length === 0;
+
   return (
     <>
       <div className="flex items-center gap-3 mb-6">
@@ -49,27 +93,44 @@ const ContactBusinessSection: React.FC<Props> = ({
         <label className="block text-[#f0b400] text-sm font-bold mb-2">
           Select Event *
         </label>
+
         <Field
           as="select"
           name="selectedEvent"
+          disabled={isSelectDisabled}
           className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
             errors.selectedEvent && touched.selectedEvent
               ? "border-red-500"
               : "border-[#f0b400] focus:border-[#f0b400]"
-          }`}
+          } ${isSelectDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
         >
-          <option value="">Select the event you are interested in…</option>
-          {EVENT_OPTIONS.map((event) => (
-            <option key={event.value} value={event.value}>
-              {event.label}
+          <option value="">
+            {loading
+              ? "Loading events…"
+              : eventOptions.length
+              ? "Select the event you are interested in…"
+              : "No active events available"}
+          </option>
+
+          {eventOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </Field>
+
+        {Boolean(error) && (
+          <p className="text-red-500 text-xs font-semibold mt-1.5">
+            {String(error)}
+          </p>
+        )}
+
         {errors.selectedEvent && touched.selectedEvent && (
           <p className="text-red-500 text-xs font-semibold mt-1.5">
             {errors.selectedEvent}
           </p>
         )}
+
         <p className="text-[#f0b400]/70 text-xs mt-1.5">
           Choose how you want to be involved in the event
         </p>
@@ -219,6 +280,7 @@ const ContactBusinessSection: React.FC<Props> = ({
             Optional — helps us feature you.
           </p>
         </div>
+
         <div>
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Facebook

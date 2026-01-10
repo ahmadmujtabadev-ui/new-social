@@ -69,7 +69,7 @@ class DashboardService extends HttpService {
 
 
   events = (params: QueryParams = {}) => 
-    this.get(`${this.eventPrefix}`, params);
+    this.get(`${this.eventPrefix}/get`, params);
   
   getEvent = (id: string) => 
     this.get(`${this.eventPrefix}/${id}`, {});

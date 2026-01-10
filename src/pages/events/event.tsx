@@ -1,111 +1,57 @@
-import React from "react";
+// src/components/EventSection.tsx
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Calendar, MapPin, Star } from "lucide-react";
 import Header from "@/components/Homepage.tsx/header";
 import Link from "next/link";
-
-
-const events = [
-  {
-    id: "oakville-eid-2026",
-    title: "Oakville Eid Festival",
-    badge: "Featured Event",
-    date: "Saturday - March 14, 2026",
-    time: "Details will be shared soon",
-    location: "Oakville, Ontario",
-    description:
-      "Join us for the biggest Eid celebration in Oakville with cultural performances, delicious food, and family fun!",
-    highlights: [
-      "Free Entry",
-      "Free Parking",
-      "Cultural Performances",
-      "Food Vendors",
-      "Kids Zone",
-      "Henna & Face Paint",
-    ],
-    primaryCtaLabel: "Get Free Tickets",
-    primaryCtaHref: "https://oakville-Eid-festival-2026.eventbrite.ca",
-    secondaryCtaLabel: "Join us",
-    secondaryCtaHref: "/#joinus",
-  },
-  {
-    id: "community-iftar-2026",
-    title: "Community Iftar",
-    badge: "Upcoming Event",
-    date: "2026",
-    time: "Details will be shared soon",
-    location: "Oakville, Ontario",
-    description:
-      "Break your fast with neighbours, friends, and family at a warm and welcoming community iftar in Oakville.",
-    highlights: [
-      "Community Gathering",
-      "Family-Friendly",
-      "Spiritual Reflections",
-      "Light Snacks & Dinner",
-    ],
-    primaryCtaLabel: "RSVP Now",
-    primaryCtaHref: "/#joinus",
-    secondaryCtaLabel: "Volunteer",
-    secondaryCtaHref: "/#joinus",
-  },
-  {
-    id: "kids-cultural-workshop-2026",
-    title: "Kids Cultural Workshop",
-    badge: "Family Event",
-    date: "2026",
-    time: "Details will be shared soon",
-    location: "Arts Center, Oakville",
-    description:
-      "A fun, interactive workshop where kids explore culture through art, storytelling, and hands-on activities.",
-    highlights: [
-      "Hands-On Activities",
-      "Arts & Crafts",
-      "Storytelling",
-      "Safe Family Environment",
-    ],
-    primaryCtaLabel: "Register Kids",
-    primaryCtaHref: "/#joinus",
-    secondaryCtaLabel: "Contact Us",
-    secondaryCtaHref: "/#joinus",
-  },
-  {
-    id: "networking-event-2026",
-    title: "Networking Event",
-    badge: "Community Meetup",
-    date: "2026",
-    time: "Details will be shared soon",
-    location: "Oakville, Ontario",
-    description:
-      "Connect with local professionals, entrepreneurs, and community members in a relaxed networking setting.",
-    highlights: [
-      "Meet Local Professionals",
-      "Community Connections",
-      "Light Refreshments",
-      "Icebreaker Activities",
-    ],
-    primaryCtaLabel: "Reserve Your Spot",
-    primaryCtaHref: "/#joinus",
-    secondaryCtaLabel: "Become a Sponsor",
-    secondaryCtaHref: "/#joinus",
-  },
-  {
-    id: "coming-soon",
-    title: "Upcoming Community Event",
-    badge: "Coming Soon",
-    date: "2026",
-    time: "Details to be announced",
-    location: "Oakville, Ontario",
-    description:
-      "Stay tuned for more cultural markets, festivals, and community events organized by Social Connections.",
-    highlights: ["Cultural Markets", "Family Activities", "Local Vendors"],
-    primaryCtaLabel: "Follow on Instagram",
-    primaryCtaHref: "https://www.instagram.com/socialconnectionsevent/",
-    secondaryCtaLabel: "Contact Us",
-    secondaryCtaHref: "/#joinus",
-  },
-];
-
+import { AppDispatch, RootState } from "@/redux/store";
+import { fetchEvents } from "@/services/dashbord/asyncThunk";
 
 export default function EventSection() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { events, loading, error } = useSelector((state: RootState) => state.dashboard);
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = () => {
+    dispatch(fetchEvents());
+  };
+
+  if (loading && events.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-black via-slate-950 to-black text-[#f0b400] flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#f0b400] mb-4"></div>
+          <p className="text-[#f0b400]/80">Loading events...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && events.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-black via-slate-950 to-black text-[#f0b400]">
+        <Header />
+        <div className="max-w-6xl mx-auto px-6 pt-28 text-center">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={loadEvents}
+            className="bg-[#f0b400] text-black px-6 py-2 rounded-full font-semibold hover:bg-[#f0b400]/90 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter only published and active events for frontend display
+  const publishedEvents = events.filter(
+    event => event.status === 'published' && event.isActive
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-slate-950 to-black text-[#f0b400]">
       {/* Navbar */}
@@ -141,7 +87,7 @@ export default function EventSection() {
             Upcoming Events
           </h1>
           <p className="text-[#f0b400]/75 text-sm md:text-base max-w-2xl mx-auto">
-            Discover what’s coming up next in Oakville — festivals, markets, and
+            Discover what is coming up next in Oakville — festivals, markets, and
             community gatherings curated by Social Connections.
           </p>
 
@@ -153,11 +99,22 @@ export default function EventSection() {
           </div>
         </div>
 
+        {/* No events message */}
+        {publishedEvents.length === 0 && !loading && (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">📅</div>
+            <h3 className="text-2xl font-bold text-[#f0b400] mb-2">No Events Available</h3>
+            <p className="text-[#f0b400]/70">
+              Check back soon for upcoming community events!
+            </p>
+          </div>
+        )}
+
         {/* Events list */}
         <section className="space-y-8 md:space-y-10">
-          {events.map((event) => (
+          {publishedEvents.map((event) => (
             <article
-              key={event.id}
+              key={event._id}
               className="relative bg-black/85 border border-[#f0b400]/35 rounded-3xl p-6 md:p-8 lg:p-9 shadow-[0_0_50px_rgba(240,180,0,0.15)] overflow-hidden"
             >
               {/* Soft glow */}
@@ -215,24 +172,19 @@ export default function EventSection() {
                   </div>
 
                   {/* Highlights */}
-                  <div className="mt-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#f0b400]/70 mb-2">
-                      Highlights
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {event.highlights.map((feature) => (
-                        <span
-                          key={feature}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#f0b400]/60 bg-black/70 text-[11px] md:text-xs text-[#f0b400]"
-                        >
-                          <Star className="w-3 h-3" />
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  {event.highlights.map((feature: any, idx: any) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#f0b400]/60 bg-black/70 text-[11px] md:text-xs text-[#f0b400]"
+                    >
+                      <Star className="w-3 h-3" />
+                      {feature}
+                    </span>
+                  ))}
+
                 </div>
 
+                {/* Right: CTA section */}
                 <div className="md:col-span-2 flex flex-col items-stretch justify-between gap-4 md:gap-6">
                   <div className="bg-gradient-to-b from-[#f0b400]/15 via-[#f0b400]/5 to-transparent rounded-2xl border border-[#f0b400]/50 p-5 flex flex-col gap-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-[#f0b400]/80">
@@ -244,34 +196,27 @@ export default function EventSection() {
                     </p>
 
                     <div className="flex flex-col gap-2 mt-2">
-
-                      {/* 🔥 Primary CTA - Open New Tab */}
+                      {/* Primary CTA */}
                       <Link
-                        href={event.primaryCtaHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={event.primaryCta.href}
+                        target={event.primaryCta.href.startsWith('http') ? '_blank' : '_self'}
+                        rel={event.primaryCta.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                         className="text-center bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black px-4 py-2.5 rounded-full text-xs md:text-sm font-black uppercase tracking-wide shadow-lg shadow-yellow-500/40 hover:shadow-yellow-500/70 hover:scale-105 transition-all duration-300 border border-yellow-300"
                       >
-                        {event.primaryCtaLabel}
+                        {event.primaryCta.label}
                       </Link>
 
+                      {/* Secondary CTA */}
                       <Link
-                        href={event.secondaryCtaHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={event.secondaryCta.href}
+                        target={event.secondaryCta.href.startsWith('http') ? '_blank' : '_self'}
+                        rel={event.secondaryCta.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                         className="text-center border border-[#f0b400]/70 text-[#f0b400] px-4 py-2.5 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wide hover:bg-[#f0b400]/10 transition-all duration-300"
                       >
-                        {event.secondaryCtaLabel}
+                        {event.secondaryCta.label}
                       </Link>
                     </div>
                   </div>
-
-                  {event.id === "oakville-eid-2026" && (
-                    <p className="text-[11px] md:text-xs text-[#f0b400]/75 text-center md:text-left">
-                      Family-friendly • Indoor event • Limited vendor spots
-                      available.
-                    </p>
-                  )}
                 </div>
               </div>
             </article>
@@ -279,11 +224,13 @@ export default function EventSection() {
         </section>
 
         {/* Bottom tagline */}
-        <div className="text-center mt-10">
-          <p className="text-[#f0b400]/70 text-xs md:text-sm uppercase tracking-[0.28em]">
-            Celebrating Community • Culture • Connection
-          </p>
-        </div>
+        {publishedEvents.length > 0 && (
+          <div className="text-center mt-10">
+            <p className="text-[#f0b400]/70 text-xs md:text-sm uppercase tracking-[0.28em]">
+              Celebrating Community • Culture • Connection
+            </p>
+          </div>
+        )}
       </main>
 
       <style>{`
