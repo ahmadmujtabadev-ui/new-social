@@ -189,7 +189,6 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-6">
-        {/* Booth */}
         <div>
           <label className="block text-[#f0b400] text-sm font-bold mb-2">
             Booth Number *
