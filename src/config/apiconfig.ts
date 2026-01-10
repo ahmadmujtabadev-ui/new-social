@@ -2,8 +2,9 @@
 
 // ================= PUBLIC / FRONTEND-SAFE VALUES =================
 
+// Base backend API (your Node server)
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://social-be-roan.vercel.app";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   // http://localhost:5000/
   // https://social-be-roan.vercel.app
 
@@ -17,7 +18,7 @@ export const GOOGLE_SHEET_URL =
   process.env.NEXT_PUBLIC_GOOGLE_SHEETS_URL ||
   'https://docs.google.com/spreadsheets/d/1B7s54EipqjSe5GG2SZlkoGJMeryBhYDKrP3AHKRMrEg/edit?gid=0#gid=0';
 
-// The sheet tab name
+// The sheet tab namep
 export const GOOGLE_SHEET_TAB =
   process.env.NEXT_PUBLIC_GOOGLE_SHEETS_SHEET_NAME || 'Sheet1';
 

@@ -17,7 +17,12 @@ import {
   createEvent,
   updateEvent,
   deleteEvent,
-  fetchEvents
+  fetchEvents,
+  createPromoCode,
+  updatePromoCode,
+  deletePromoCode,
+  fetchPromoCodes,
+  // validatePromoCode
 } from "@/services/dashbord/asyncThunk";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
@@ -90,6 +95,7 @@ export interface DashboardState {
   participants: any[];
   volunteers: any[];
   stats: Stats | null;
+  promoCodes: any[]; // ADD THIS
   loading: boolean;
   error: string | null;
   currentPage: number;
@@ -112,6 +118,7 @@ const initialState: DashboardState = {
   participants: [],
   volunteers: [],
   events: [],
+  promoCodes: [], // ADD THIS
   stats: null,
   loading: false,
   error: null,
@@ -373,6 +380,60 @@ const dashboardSlice = createSlice({
       })
       .addCase(deleteEvent.rejected, (state, action) => {
         state.error = (action.payload as string) || "Failed to delete event";
+      });
+    // ============================================
+    // ADD TO EXTRA REDUCERS (inside the builder)
+    // ============================================
+
+    // ===== Fetch Promo Codes =====
+    builder
+      .addCase(fetchPromoCodes.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPromoCodes.fulfilled, (state, action) => {
+        state.loading = false;
+        state.promoCodes = action.payload;
+      })
+      .addCase(fetchPromoCodes.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to fetch promo codes";
+      });
+
+    // ===== Create Promo Code =====
+    builder
+      .addCase(createPromoCode.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPromoCode.fulfilled, (state, action) => {
+        state.loading = false;
+        state.promoCodes.unshift(action.payload);
+      })
+      .addCase(createPromoCode.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to create promo code";
+      });
+
+    // ===== Update Promo Code =====
+    builder
+      .addCase(updatePromoCode.fulfilled, (state, action) => {
+        const index = state.promoCodes.findIndex(
+          (p) => p._id === action.payload._id
+        );
+        if (index !== -1) state.promoCodes[index] = action.payload;
+      })
+      .addCase(updatePromoCode.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to update promo code";
+      });
+
+    // ===== Delete Promo Code =====
+    builder
+      .addCase(deletePromoCode.fulfilled, (state, action) => {
+        state.promoCodes = state.promoCodes.filter((p) => p._id !== action.payload);
+      })
+      .addCase(deletePromoCode.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to delete promo code";
       });
   },
 });

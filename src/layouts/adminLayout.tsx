@@ -7,6 +7,10 @@ import {
   Users,
   Trophy,
   LogOut,
+  Store,
+  UserCheck,
+  Calendar,
+  Ticket,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -21,11 +25,12 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/admin/admin', icon: LayoutDashboard },
-  { name: 'Vendors', href: '/admin/vendors', icon: Users },
+  { name: 'Vendors', href: '/admin/vendors', icon: Store },
   { name: 'Sponsors', href: '/admin/sponsors', icon: Trophy },
-  { name: 'Volunteers', href: '/admin/volunteers', icon: Users },
-  { name: 'Events', href: '/admin/events', icon: Users },
-  { name: 'Participants', href: '/admin/part', icon: Trophy },
+  { name: 'Volunteers', href: '/admin/volunteers', icon: UserCheck },
+  { name: 'Events', href: '/admin/events', icon: Calendar },
+  { name: 'Promo Code', href: '/admin/promo', icon: Ticket },
+  { name: 'Participants', href: '/admin/part', icon: Users },
   { name: 'Logout', href: '#', icon: LogOut },
 ];
 
@@ -123,8 +128,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 className="flex flex-col items-center gap-1 px-2 py-2 transition-all hover:scale-110 active:scale-95"
               >
                 <div className={`p-1.5 rounded-lg transition-all ${active
-                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/30'
-                    : 'bg-yellow-500/10 hover:bg-yellow-500/20'
+                  ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/30'
+                  : 'bg-yellow-500/10 hover:bg-yellow-500/20'
                   }`}>
                   <Icon
                     className={`h-5 w-5 ${active ? 'text-black' : 'text-yellow-500/70'

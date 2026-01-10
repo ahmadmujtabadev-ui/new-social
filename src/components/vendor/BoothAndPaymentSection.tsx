@@ -4,38 +4,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { FormikErrors, FormikTouched } from "formik";
-
-type PromoType = {
-  discount: number;
-  discountType: "percent" | "flat";
-  description: string;
-  startDate: string;
-  endDate: string;
-};
-
-const PROMO_CODES: Record<string, PromoType> = {
-  EARLY25: {
-    discount: 25,
-    discountType: "percent",
-    description: "25% Early Bird Discount",
-    startDate: "2025-11-15",
-    endDate: "2026-01-31",
-  },
-  SAVE50: {
-    discount: 50,
-    discountType: "flat",
-    description: "$50 Off Special",
-    startDate: "2025-12-19",
-    endDate: "2026-01-02",
-  },
-  VIP20: {
-    discount: 20,
-    discountType: "percent",
-    description: "20% VIP Discount",
-    startDate: "2026-01-15",
-    endDate: "2026-01-31",
-  },
-};
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { fetchPromoCodes } from "@/services/dashbord/asyncThunk";
 
 type AppliedPromo = {
   code: string;
@@ -43,28 +14,6 @@ type AppliedPromo = {
   discountType: "percent" | "flat";
   description: string;
 };
-
-function validatePromo(code: string): {
-  valid: boolean;
-  message: string;
-  promo?: PromoType;
-} {
-  const promo = PROMO_CODES[code.toUpperCase()];
-  if (!promo) return { valid: false, message: "Invalid promo code." };
-
-  const now = new Date();
-  const start = new Date(promo.startDate);
-  const end = new Date(promo.endDate);
-
-  if (now < start) {
-    return { valid: false, message: `This promo will start on ${promo.startDate}.` };
-  }
-  if (now > end) {
-    return { valid: false, message: `This promo expired on ${promo.endDate}.` };
-  }
-
-  return { valid: true, message: "Promo applied.", promo };
-}
 
 interface BoothAndPaymentProps {
   values: any;
@@ -87,8 +36,18 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
   setFieldValue,
   basePrice,
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { promoCodes, loading: promoLoading } = useSelector((state: RootState) => state.dashboard);
+  
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
   const [promoError, setPromoError] = useState("");
+
+  // Fetch promo codes on mount
+  useEffect(() => {
+    if (promoCodes.length === 0) {
+      dispatch(fetchPromoCodes());
+    }
+  }, [dispatch]);
 
   const getErrorMessage = (
     error: string | string[] | FormikErrors<any> | FormikErrors<any>[] | undefined
@@ -97,10 +56,55 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
     return "";
   };
 
+  // Validate promo code from fetched promo codes
+  const validatePromo = (code: string): {
+    valid: boolean;
+    message: string;
+    promo?: any;
+  } => {
+    const promo = promoCodes.find(p => p.code === code.toUpperCase());
+    
+    if (!promo) {
+      return { valid: false, message: "Invalid promo code." };
+    }
+
+    // Check if active
+    if (!promo.isActive) {
+      return { valid: false, message: "This promo code is inactive." };
+    }
+
+    // Check dates
+    const now = new Date();
+    const start = new Date(promo.startDate);
+    const end = new Date(promo.endDate);
+
+    if (now < start) {
+      return { 
+        valid: false, 
+        message: `This promo will start on ${new Date(promo.startDate).toLocaleDateString()}.` 
+      };
+    }
+    if (now > end) {
+      return { 
+        valid: false, 
+        message: `This promo expired on ${new Date(promo.endDate).toLocaleDateString()}.` 
+      };
+    }
+
+    // Check usage limit
+    if (promo.usageLimit && promo.usageCount >= promo.usageLimit) {
+      return { valid: false, message: "This promo code has reached its usage limit." };
+    }
+
+    return { valid: true, message: "Promo applied.", promo };
+  };
+
+  // Restore applied promo from form values on mount
   useEffect(() => {
     const code = String(values.appliedPromoCode || "").trim();
     const type = values.appliedPromoType as "percent" | "flat" | "";
     const discount = Number(values.appliedPromoDiscount || 0);
+    const description = values.appliedPromoDescription || "";
 
     if (!code || !type || !discount) return;
 
@@ -109,7 +113,7 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
         code,
         discount,
         discountType: type,
-        description: PROMO_CODES[code]?.description || "Promo applied",
+        description: description || "Promo applied",
       });
     }
   }, [values.appliedPromoCode, values.appliedPromoType, values.appliedPromoDiscount]);
@@ -133,6 +137,7 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
       : `$${appliedPromo.discount.toFixed(2)}`
     : "";
 
+  // Update form values when promo changes
   useEffect(() => {
     setFieldValue("amountToPay", discountedPrice);
 
@@ -140,10 +145,12 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
       setFieldValue("appliedPromoCode", appliedPromo.code);
       setFieldValue("appliedPromoDiscount", appliedPromo.discount);
       setFieldValue("appliedPromoType", appliedPromo.discountType);
+      setFieldValue("appliedPromoDescription", appliedPromo.description);
     } else {
       setFieldValue("appliedPromoCode", "");
       setFieldValue("appliedPromoDiscount", 0);
       setFieldValue("appliedPromoType", "");
+      setFieldValue("appliedPromoDescription", "");
     }
   }, [appliedPromo, discountedPrice, setFieldValue]);
 
@@ -156,16 +163,19 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
       return;
     }
 
+    // Validate against fetched promo codes
     const result = validatePromo(code);
+    
     if (!result.valid || !result.promo) {
       setPromoError(result.message);
       setAppliedPromo(null);
       return;
     }
 
+    // Apply the valid promo
     setPromoError("");
     setAppliedPromo({
-      code,
+      code: result.promo.code,
       discount: result.promo.discount,
       discountType: result.promo.discountType,
       description: result.promo.description,
@@ -175,6 +185,7 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
   const removePromo = () => {
     setPromoError("");
     setAppliedPromo(null);
+    setFieldValue("promoCode", "");
   };
 
   return (
@@ -257,7 +268,7 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
                 </div>
                 <div className="flex justify-between text-emerald-400">
                   <span>Discount ({discountLabel})</span>
-                  <span>-{discountAmount.toFixed(2)}</span>
+                  <span>-${discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-bold">
                   <span>Total:</span>
@@ -282,7 +293,8 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
                 setPromoError("");
               }}
               placeholder="Promo code (optional)"
-              className="flex-1 px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl outline-none"
+              disabled={promoLoading}
+              className="flex-1 px-4 py-3.5 text-sm text-white bg-black border-2 border-[#f0b400] rounded-xl outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
 
             {appliedPromo ? (
@@ -297,15 +309,22 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
               <button
                 type="button"
                 onClick={applyPromo}
-                className="px-4 py-3 rounded-xl bg-[#f0b400] text-black font-bold text-sm whitespace-nowrap"
+                disabled={promoLoading}
+                className="px-4 py-3 rounded-xl bg-[#f0b400] text-black font-bold text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow-500 transition"
               >
-                Apply
+                {promoLoading ? "Loading..." : "Apply"}
               </button>
             )}
           </div>
 
           {promoError && (
             <p className="text-red-500 text-xs font-semibold mt-1.5">{promoError}</p>
+          )}
+
+          {appliedPromo && !promoError && (
+            <p className="text-emerald-400 text-xs font-semibold mt-1.5">
+              ✓ Promo code {appliedPromo.code} applied successfully!
+            </p>
           )}
         </div>
       </div>

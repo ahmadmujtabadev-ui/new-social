@@ -273,3 +273,75 @@ export const deleteEvent = createAsyncThunk(
     }
   }
 );
+
+// src/services/dashboard/asyncThunk.ts - ADD THESE TO YOUR EXISTING FILE
+
+// ============================================
+// PROMO CODES
+// ============================================
+
+export const fetchPromoCodes = createAsyncThunk(
+  "dashboard/fetchPromoCodes",
+  async (_: void, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.promoCodes();
+      console.log("Fetched promo codes data:", res);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch promo codes");
+    }
+  }
+);
+
+export const createPromoCode = createAsyncThunk(
+  "dashboard/createPromoCode",
+  async (promoData: any, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.createPromoCode(promoData);
+      return res.data || res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to create promo code");
+    }
+  }
+);
+
+export const updatePromoCode = createAsyncThunk(
+  "dashboard/updatePromoCode",
+  async ({ id, updates }: { id: string; updates: Partial<any> }, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.updatePromoCode(id, updates);
+      return res.data || res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update promo code");
+    }
+  }
+);
+
+export const deletePromoCode = createAsyncThunk(
+  "dashboard/deletePromoCode",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      await dashboardService.deletePromoCode(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to delete promo code");
+    }
+  }
+);
+
+export const validatePromoCode = createAsyncThunk(
+  "dashboard/validatePromoCode",
+  async (code: string, { rejectWithValue }) => {
+    try {
+      setTokenIfAny();
+      const res = await dashboardService.validatePromoCode(code);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to validate promo code");
+    }
+  }
+);
