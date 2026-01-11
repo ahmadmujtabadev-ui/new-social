@@ -28,7 +28,7 @@ const PromoCodePage: React.FC = () => {
       try {
         await dispatch(deletePromoCode(promoId)).unwrap();
         alert('Promo code deleted successfully');
-        loadPromoCodes();
+        loadPromoCodes(); 
       } catch (error) {
         console.error('Failed to delete promo code:', error);
         alert('Failed to delete promo code');
@@ -71,8 +71,8 @@ const PromoCodePage: React.FC = () => {
 
   const filteredPromos = promoCodes.filter(promo => {
     const matchesSearch = 
-      promo.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      promo.description.toLowerCase().includes(searchTerm.toLowerCase());
+      promo?.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      promo?.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filterType === 'all') return matchesSearch;
     if (filterType === 'active') return matchesSearch && isPromoValid(promo);

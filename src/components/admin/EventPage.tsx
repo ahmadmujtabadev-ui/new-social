@@ -45,9 +45,9 @@ const EventPage: React.FC = () => {
   };
 
   const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.badge.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase())
+    event?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    event?.badge?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    event?.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading && events.length === 0) {

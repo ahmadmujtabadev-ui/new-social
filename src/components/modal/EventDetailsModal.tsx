@@ -116,9 +116,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 pb-24">
-      <div className="bg-zinc-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
+      <div className="bg-black-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
         {/* Fixed Header */}
-        <div className="bg-zinc-900 border-b border-yellow-500/30 px-6 py-4 flex justify-between items-center flex-shrink-0">
+        <div className="bg-black-900 border-b border-yellow-500/30 px-6 py-4 flex justify-between items-center flex-shrink-0">
           <h2 className="text-2xl font-bold text-yellow-500">
             {event ? 'Edit Event' : 'Create New Event'}
           </h2>
