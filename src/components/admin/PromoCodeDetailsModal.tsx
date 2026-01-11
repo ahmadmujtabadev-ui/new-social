@@ -14,7 +14,6 @@ interface PromoCodeDetailsModalProps {
 const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
     promo,
     onClose,
-    onSuccess,
 }) => {
     const dispatch = useDispatch<AppDispatch>();
     const [loading, setLoading] = useState(false);
