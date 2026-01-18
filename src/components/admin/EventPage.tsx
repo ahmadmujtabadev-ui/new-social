@@ -12,13 +12,19 @@ const EventPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [activeFilter, setActiveFilter] = useState<string>('');
 
   useEffect(() => {
     loadEvents();
-  }, []);
+  }, [statusFilter, activeFilter]);
 
   const loadEvents = () => {
-    dispatch(fetchEvents());
+    const params: any = {};
+    if (statusFilter) params.status = statusFilter;
+    if (activeFilter) params.isActive = activeFilter;
+    
+    dispatch(fetchEvents(params));
   };
 
   const handleDelete = async (eventId: string) => {
@@ -50,6 +56,31 @@ const EventPage: React.FC = () => {
     event?.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Format date from eventDateTime
+  const formatDate = (eventDateTime: string) => {
+    const date = new Date(eventDateTime);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  // Format time from eventDateTime
+  const formatTime = (eventDateTime: string) => {
+    const date = new Date(eventDateTime);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  // Check if event is upcoming
+  const isUpcoming = (eventDateTime: string) => {
+    return new Date(eventDateTime) >= new Date();
+  };
+
   if (loading && events.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -75,47 +106,68 @@ const EventPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="flex gap-4">
+        {/* Search and Filters */}
+        <div className="flex gap-4 flex-wrap">
           <input
             type="text"
             placeholder="Search events..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 bg-black-900 border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 placeholder-gray-500"
+            className="flex-1 min-w-[200px] px-4 py-2 bg-zinc-900 border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 placeholder-gray-500"
           />
+          
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 bg-zinc-900 border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          >
+            <option value="">All Status</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </select>
+
+          <select
+            value={activeFilter}
+            onChange={(e) => setActiveFilter(e.target.value)}
+            className="px-4 py-2 bg-zinc-900 border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          >
+            <option value="">All Events</option>
+            <option value="true">Active Only</option>
+            <option value="false">Inactive Only</option>
+          </select>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500 text-yellow-400 rounded-lg">
+        <div className="mb-4 p-4 bg-red-900/20 border border-red-500 text-red-400 rounded-lg">
           {error}
         </div>
       )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-black-900 border border-yellow-500/30 p-4 rounded-lg">
+        <div className="bg-zinc-900 border border-yellow-500/30 p-4 rounded-lg">
           <div className="text-sm text-gray-400">Total Events</div>
           <div className="text-2xl font-bold text-yellow-500">{events.length}</div>
         </div>
-        <div className="bg-black-900 border border-yellow-500/30 p-4 rounded-lg">
+        <div className="bg-zinc-900 border border-yellow-500/30 p-4 rounded-lg">
           <div className="text-sm text-gray-400">Published</div>
           <div className="text-2xl font-bold text-yellow-500">
             {events.filter(e => e.status === 'published').length}
           </div>
         </div>
-        <div className="bg-black-900 border border-yellow-500/30 p-4 rounded-lg">
-          <div className="text-sm text-gray-400">Draft</div>
+        <div className="bg-zinc-900 border border-yellow-500/30 p-4 rounded-lg">
+          <div className="text-sm text-gray-400">Upcoming</div>
           <div className="text-2xl font-bold text-yellow-500">
-            {events.filter(e => e.status === 'draft').length}
+            {events.filter(e => isUpcoming(e.eventDateTime)).length}
           </div>
         </div>
-        <div className="bg-black-900 border border-yellow-500/30 p-4 rounded-lg">
-          <div className="text-sm text-gray-400">Archived</div>
-          <div className="text-2xl font-bold text-gray-500">
-            {events.filter(e => e.status === 'archived').length}
+        <div className="bg-zinc-900 border border-yellow-500/30 p-4 rounded-lg">
+          <div className="text-sm text-gray-400">Active</div>
+          <div className="text-2xl font-bold text-yellow-500">
+            {events.filter(e => e.isActive).length}
           </div>
         </div>
       </div>
@@ -123,17 +175,27 @@ const EventPage: React.FC = () => {
       {/* Events Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEvents.map((event) => (
-          <div key={event._id} className="bg-black-900 border border-yellow-500/30 rounded-lg overflow-hidden hover:border-yellow-500 transition-all">
+          <div key={event._id} className="bg-zinc-900 border border-yellow-500/30 rounded-lg overflow-hidden hover:border-yellow-500 transition-all">
             <div className="p-6">
-              {/* Badge */}
-              <div className="mb-3">
+              {/* Status and Badge */}
+              <div className="mb-3 flex gap-2 flex-wrap">
                 <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
-                  event.status === 'published' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
+                  event.status === 'published' ? 'bg-green-900/50 text-green-400 border border-green-500/30' :
                   event.status === 'draft' ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/30' :
                   'bg-gray-900/50 text-gray-400 border border-gray-500/30'
                 }`}>
+                  {event.status}
+                </span>
+                
+                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-500/30">
                   {event.badge}
                 </span>
+
+                {isUpcoming(event.eventDateTime) && (
+                  <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-900/50 text-blue-400 border border-blue-500/30">
+                    Upcoming
+                  </span>
+                )}
               </div>
 
               {/* Title */}
@@ -143,11 +205,11 @@ const EventPage: React.FC = () => {
               <div className="space-y-2 mb-4 text-sm text-gray-400">
                 <div className="flex items-center gap-2">
                   <span>📅</span>
-                  <span>{event.date}</span>
+                  <span>{formatDate(event.eventDateTime)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span>⏰</span>
-                  <span>{event.time}</span>
+                  <span>{formatTime(event.eventDateTime)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span>📍</span>
@@ -179,10 +241,20 @@ const EventPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Status Badge */}
+              {/* CTAs */}
+              {event.primaryCta && (
+                <div className="mb-4 text-xs text-gray-400">
+                  <div>Primary CTA: <span className="text-yellow-400">{event.primaryCta.label}</span></div>
+                  {event.secondaryCta && (
+                    <div>Secondary CTA: <span className="text-yellow-400">{event.secondaryCta.label}</span></div>
+                  )}
+                </div>
+              )}
+
+              {/* Active Status Badge */}
               <div className="mb-4">
                 <span className={`inline-block px-3 py-1 text-xs font-semibold rounded ${
-                  event.isActive ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' : 'bg-zinc-800 text-gray-400 border border-gray-500/30'
+                  event.isActive ? 'bg-green-900/50 text-green-400 border border-green-500/30' : 'bg-zinc-800 text-gray-400 border border-gray-500/30'
                 }`}>
                   {event.isActive ? 'Active' : 'Inactive'}
                 </span>
@@ -198,7 +270,7 @@ const EventPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => handleDelete(event._id)}
-                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-yellow-500 border border-yellow-500/30 px-4 py-2 rounded text-sm transition-colors"
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-red-500 border border-red-500/30 px-4 py-2 rounded text-sm transition-colors"
                 >
                   Delete
                 </button>
@@ -214,9 +286,11 @@ const EventPage: React.FC = () => {
           <div className="text-yellow-500 text-6xl mb-4">📅</div>
           <h3 className="text-xl font-semibold text-yellow-500 mb-2">No events found</h3>
           <p className="text-gray-400 mb-4">
-            {searchTerm ? 'Try adjusting your search' : 'Create your first event to get started'}
+            {searchTerm || statusFilter || activeFilter 
+              ? 'Try adjusting your filters' 
+              : 'Create your first event to get started'}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !statusFilter && !activeFilter && (
             <button
               onClick={handleCreate}
               className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-2 rounded-lg transition-colors"

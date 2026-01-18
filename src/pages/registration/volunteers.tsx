@@ -1,18 +1,19 @@
-
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Header from "@/components/Homepage.tsx/header";
 import { submitVolunteerAsync } from "@/services/auth/asyncThunk";
+import { fetchEvents } from "@/services/dashbord/asyncThunk";
 import { resetFormState, selectForms } from "@/redux/slices/userSlice";
+import { RootState } from "@/redux/store";
 import { TermsCheckboxWithModal } from "@/components/common/TermsModal";
 import Toast from "@/components/Toast";
 
 type Errors = Record<string, string>;
 
 type FormData = {
+  selectedEvent: string;
   fullName: string;
   email: string;
   phone: string;
@@ -34,6 +35,7 @@ const STORAGE_VERSION = "v1";
 const DRAFT_KEY = `volunteerFormDraft:${STORAGE_VERSION}`;
 
 const EMPTY: FormData = {
+  selectedEvent: "",
   fullName: "",
   email: "",
   phone: "",
@@ -44,9 +46,30 @@ const EMPTY: FormData = {
   terms: false,
 };
 
+interface UiEventOption {
+  value: string;
+  label: string;
+}
+
+// Helper functions for event data
+const getEventId = (event: any): string => event?._id || "";
+const getEventLabel = (event: any): string => {
+  if (!event) return "";
+  const title = event.title || "Untitled Event";
+  const dateTime = event.eventDateTime 
+    ? new Date(event.eventDateTime).toLocaleDateString()
+    : event.date || "";
+  return `${title}${dateTime ? ` - ${dateTime}` : ""}`;
+};
+
 const VolunteerForm: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const { isLoading, volunteerSuccess } = useSelector(selectForms);
+
+  // Get events from Redux store
+  const { events = [], loading, error } = useSelector(
+    (state: RootState) => state.dashboard 
+  );
 
   const [formData, setFormData] = useState<FormData>(() => {
     if (typeof window === "undefined") return EMPTY;
@@ -60,6 +83,29 @@ const VolunteerForm: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<Errors>({});
+
+  // Fetch events on mount
+  useEffect(() => {
+    dispatch(fetchEvents());
+  }, [dispatch]);
+
+  // Filter only published and active events for frontend display
+  const publishedEvents = useMemo(() => {
+    const list = Array.isArray(events) ? events : [];
+    return list.filter((event: any) => 
+      event?.status === "published" && !!event?.isActive
+    );
+  }, [events]);
+
+  // Create event options for dropdown
+  const eventOptions: UiEventOption[] = useMemo(() => {
+    return publishedEvents
+      .map((e: any) => ({
+        value: getEventId(e),
+        label: getEventLabel(e),
+      }))
+      .filter((opt) => opt.value); // remove invalid ids
+  }, [publishedEvents]);
 
   useEffect(() => {
     try {
@@ -86,6 +132,7 @@ const VolunteerForm: React.FC = () => {
   const validate = () => {
     const e: Errors = {};
 
+    if (!formData.selectedEvent) e.selectedEvent = "Please select an event";
     if (!formData.fullName.trim()) e.fullName = "Full name is required";
     if (!formData.email.trim()) e.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
@@ -111,6 +158,7 @@ const VolunteerForm: React.FC = () => {
     if (!validate()) return;
 
     const payload = {
+      selectedEvent: formData.selectedEvent,
       fullName: formData.fullName.trim(),
       email: formData.email.trim().toLowerCase(),
       phone: formData.phone.trim(),
@@ -121,7 +169,7 @@ const VolunteerForm: React.FC = () => {
       terms: formData.terms,
     };
 
-    dispatch(submitVolunteerAsync(payload) as any);
+    dispatch(submitVolunteerAsync(payload));
   };
 
   useEffect(() => {
@@ -147,6 +195,8 @@ const VolunteerForm: React.FC = () => {
     });
   };
 
+  const isSelectDisabled = loading || eventOptions.length === 0;
+
   return (
     <div className="min-h-screen bg-black text-[#f0b400]">
       <Header />
@@ -165,6 +215,57 @@ const VolunteerForm: React.FC = () => {
           onSubmit={handleSubmit}
           className="bg-black border-2 border-[#f0b400]/40 p-6 md:p-12 shadow-2xl shadow-yellow-500/10 rounded-2xl"
         >
+          {/* Event Selection */}
+          <div className="mb-8">
+            <label className="block text-[#f0b400] text-sm font-bold mb-2">
+              Select Event *
+            </label>
+
+            <select
+              name="selectedEvent"
+              value={formData.selectedEvent}
+              onChange={handleChange}
+              disabled={isSelectDisabled}
+              className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
+                errors.selectedEvent
+                  ? "border-red-500"
+                  : "border-[#f0b400] focus:border-[#f0b400]"
+              } ${isSelectDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
+            >
+              <option value="">
+                {loading
+                  ? "Loading events…"
+                  : eventOptions.length
+                  ? "Select the event you want to volunteer for…"
+                  : "No active events available"}
+              </option>
+
+              {eventOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            {Boolean(error) && (
+              <p className="text-red-500 text-xs font-semibold mt-1.5">
+                {String(error)}
+              </p>
+            )}
+
+            {errors.selectedEvent && (
+              <p className="text-red-500 text-xs font-semibold mt-1.5">
+                {errors.selectedEvent}
+              </p>
+            )}
+
+            <p className="text-[#f0b400]/70 text-xs mt-1.5">
+              Choose the event you want to volunteer for
+            </p>
+          </div>
+
+          <div className="h-0.5 bg-gradient-to-r from-[#f0b400]/40 to-transparent my-8 md:my-10" />
+
           {/* Section A - Your Information */}
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black font-black text-lg md:text-xl">
@@ -348,7 +449,7 @@ const VolunteerForm: React.FC = () => {
               </label>
               <input
                 name="emPhone"
-                 maxLength={11}
+                maxLength={11}
                 value={formData.emPhone}
                 onChange={handleChange}
                 placeholder="+1 (___) ___-____"
@@ -376,7 +477,6 @@ const VolunteerForm: React.FC = () => {
               setFormData((prev) => ({ ...prev, terms: checked }))
             }
           />
-
 
           <div className="flex flex-wrap gap-4 justify-center mt-8 md:mt-10">
             <button

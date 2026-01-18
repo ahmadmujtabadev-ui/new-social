@@ -1,23 +1,79 @@
 // src/components/admin/ParticipantsPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { Search, Eye, Trash2, RefreshCw, Users, Calendar } from 'lucide-react';
-import { deleteParticipant, fetchParticipants } from '@/services/dashbord/asyncThunk';
+import { deleteParticipant, fetchParticipants, fetchEvents } from '@/services/dashbord/asyncThunk';
+import { RootState } from '@/redux/store';
+
+interface EventOption {
+  value: string;
+  label: string;
+}
 
 const ParticipantsPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { participants, loading } = useAppSelector((state) => state.dashboard);
+  
+  // Get participants and events from Redux store
+  const { participants, loading: participantsLoading } = useAppSelector(
+    (state: RootState) => state.dashboard
+  );
+  
+  const { events = [], loading: eventsLoading } = useAppSelector(
+    (state: RootState) => state.dashboard
+  );
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
+  
   const [showModal, setShowModal] = useState(false);
-console.log(selectedParticipant, showModal)
+console.log(selectedParticipant,showModal)
+  // Fetch events on mount
+  useEffect(() => {
+    dispatch(fetchEvents());
+  }, [dispatch]);
+
+  // Filter only published and active events
+  const publishedEvents = useMemo(() => {
+    const list = Array.isArray(events) ? events : [];
+    return list.filter((event: any) => 
+      event?.status === 'published' && event?.isActive
+    );
+  }, [events]);
+
+  // Create event options for dropdown
+  const eventOptions: EventOption[] = useMemo(() => {
+    return publishedEvents
+      .map((event: any) => {
+        const title = event?.title || 'Untitled Event';
+        const dateTime = event?.eventDateTime 
+          ? new Date(event.eventDateTime).toLocaleDateString()
+          : event?.date || '';
+        return {
+          value: event?._id || '',
+          label: `${title}${dateTime ? ` - ${dateTime}` : ''}`,
+        };
+      })
+      .filter((opt) => opt.value);
+  }, [publishedEvents]);
+
+  // Auto-select first event when events load
+  useEffect(() => {
+    if (eventOptions.length > 0 && !selectedEventId) {
+      setSelectedEventId(eventOptions[0].value);
+    }
+  }, [eventOptions]);
+
+  // Load participants when event filter changes
   useEffect(() => {
     loadParticipants();
-  }, []);
+  }, [selectedEventId]);
 
   const loadParticipants = () => {
-    dispatch(fetchParticipants());
+    const params: any = {};
+    if (selectedEventId) params.eventId = selectedEventId;
+    
+    dispatch(fetchParticipants(params));
   };
 
   const handleDelete = async (participantId: string) => {
@@ -37,11 +93,37 @@ console.log(selectedParticipant, showModal)
     setShowModal(true);
   };
 
-  const filteredParticipants = participants.filter((participant) =>
-    participant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    participant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    participant.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleEventChange = (eventId: string) => {
+    setSelectedEventId(eventId);
+  };
+
+  const isSelectDisabled = eventsLoading || eventOptions.length === 0;
+  const loading = participantsLoading || eventsLoading;
+
+  // Filter participants by search term and event
+  const filteredParticipants = useMemo(() => {
+    let result = participants;
+
+    // Filter by event
+    if (selectedEventId) {
+      result = result.filter((participant: any) =>
+        participant.selectedEvent?._id === selectedEventId ||
+        participant.selectedEvent === selectedEventId
+      );
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      result = result.filter((participant: any) =>
+        participant.name?.toLowerCase().includes(search) ||
+        participant.email?.toLowerCase().includes(search) ||
+        participant.category?.toLowerCase().includes(search)
+      );
+    }
+
+    return result;
+  }, [participants, selectedEventId, searchTerm]);
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
@@ -93,6 +175,39 @@ console.log(selectedParticipant, showModal)
         </button>
       </div>
 
+      {/* Event Filter */}
+      <div className="bg-gray-900 rounded-lg border border-yellow-500/30 p-4">
+        <div className="flex items-center gap-3">
+          <Calendar className="w-5 h-5 text-yellow-500" />
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-yellow-500 mb-2">
+              Filter by Event *
+            </label>
+            <select
+              value={selectedEventId}
+              onChange={(e) => handleEventChange(e.target.value)}
+              disabled={isSelectDisabled}
+              className={`w-full px-4 py-2.5 bg-black border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 ${
+                isSelectDisabled ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <option value="">
+                {eventsLoading
+                  ? 'Loading events...'
+                  : eventOptions.length
+                  ? 'All Events'
+                  : 'No active events available'}
+              </option>
+              {eventOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Search */}
       <div className="bg-gray-900 rounded-lg border border-yellow-500/30 p-4">
         <div className="relative">
@@ -114,7 +229,7 @@ console.log(selectedParticipant, showModal)
             <div>
               <p className="text-black/70 text-sm font-medium">Kids</p>
               <p className="text-2xl font-bold mt-1">
-                {participants.filter(p => p.category?.toUpperCase() === 'KIDS').length}
+                {filteredParticipants.filter((p: any) => p.category?.toUpperCase() === 'KIDS').length}
               </p>
             </div>
             <Users className="w-8 h-8 opacity-50" />
@@ -126,7 +241,7 @@ console.log(selectedParticipant, showModal)
             <div>
               <p className="text-black/70 text-sm font-medium">Teens</p>
               <p className="text-2xl font-bold mt-1">
-                {participants.filter(p => p.category?.toUpperCase() === 'TEENS').length}
+                {filteredParticipants.filter((p: any) => p.category?.toUpperCase() === 'TEENS').length}
               </p>
             </div>
             <Users className="w-8 h-8 opacity-50" />
@@ -138,7 +253,7 @@ console.log(selectedParticipant, showModal)
             <div>
               <p className="text-yellow-100 text-sm font-medium">Adults</p>
               <p className="text-2xl font-bold mt-1">
-                {participants.filter(p => p.category?.toUpperCase() === 'ADULTS').length}
+                {filteredParticipants.filter((p: any) => p.category?.toUpperCase() === 'ADULTS').length}
               </p>
             </div>
             <Users className="w-8 h-8 opacity-50" />
@@ -149,7 +264,7 @@ console.log(selectedParticipant, showModal)
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100 text-sm font-medium">Total</p>
-              <p className="text-2xl font-bold mt-1">{participants.length}</p>
+              <p className="text-2xl font-bold mt-1">{filteredParticipants.length}</p>
             </div>
             <Users className="w-8 h-8 opacity-50" />
           </div>
@@ -165,7 +280,13 @@ console.log(selectedParticipant, showModal)
         ) : filteredParticipants.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">No participants found</p>
+            <p className="text-gray-400">
+              {selectedEventId
+                ? 'No participants found for this event'
+                : searchTerm
+                ? 'No participants match your search'
+                : 'No participants found'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -174,6 +295,9 @@ console.log(selectedParticipant, showModal)
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-yellow-500 uppercase tracking-wider">
                     Participant
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-yellow-500 uppercase tracking-wider">
+                    Event
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-yellow-500 uppercase tracking-wider">
                     Contact
@@ -193,7 +317,7 @@ console.log(selectedParticipant, showModal)
                 </tr>
               </thead>
               <tbody className="bg-gray-900 divide-y divide-gray-800">
-                {filteredParticipants.map((participant) => (
+                {filteredParticipants.map((participant: any) => (
                   <tr key={participant._id} className="hover:bg-gray-800 transition">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
@@ -212,6 +336,16 @@ console.log(selectedParticipant, showModal)
                           )}
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-400">
+                        {participant.selectedEvent?.title || 'N/A'}
+                      </div>
+                      {participant.selectedEvent?.eventDateTime && (
+                        <div className="text-xs text-gray-500">
+                          {new Date(participant.selectedEvent.eventDateTime).toLocaleDateString()}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">

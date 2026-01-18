@@ -25,13 +25,13 @@ interface Props {
   setFieldValue: (field: string, value: any) => void;
 }
 
-type UiEventOption = { value: string; label: string };
+export type UiEventOption = { value: string; label: string };
 
-function getEventId(event: any): string {
+export function getEventId(event: any): string {
   return String(event?._id ?? event?.id ?? "");
 }
 
-function getEventLabel(event: any): string {
+export function getEventLabel(event: any): string {
   return String(event?.title ?? event?.name ?? event?.eventName ?? "Untitled Event");
 }
 

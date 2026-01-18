@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import * as Yup from "yup";
 import Image from "next/image";
-import { useDispatch } from "react-redux"; // 👇 Redux import
+import { useDispatch, useSelector } from "react-redux";
 
 import Header from "@/components/Homepage.tsx/header";
 import { TermsCheckboxWithModal } from "@/components/common/TermsModal";
 import Toast from "@/components/Toast";
 
-// 👇 Updated Imports
 import { API_BASE_URL } from "@/config/apiconfig";
 import { 
   submitSponsorAsync, 
   fetchSponsorsAsync 
-} from "@/services/auth/asyncThunk"; // Adjust path to where you saved the thunks
+} from "@/services/auth/asyncThunk";
+import { fetchEvents } from "@/services/dashbord/asyncThunk";
+import { RootState } from "@/redux/store";
 
-// 👇 Interface definitions
 const TIERS = [
   {
     id: "Platinum" as const,
@@ -59,6 +59,7 @@ const TIERS = [
 ];
 
 const SponsorSchema = Yup.object({
+  selectedEvent: Yup.string().required("Please select an event"),
   businessName: Yup.string().trim().required("Business name is required"),
   ownerName: Yup.string().trim().required("Owner name is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
@@ -83,6 +84,7 @@ const SponsorSchema = Yup.object({
 });
 
 interface SponsorFormValues {
+  selectedEvent: string;
   businessName: string;
   ownerName: string;
   email: string;
@@ -106,7 +108,13 @@ interface Sponsor {
   logoPath: string | null;
 }
 
+interface UiEventOption {
+  value: string;
+  label: string;
+}
+
 const initialValues: SponsorFormValues = {
+  selectedEvent: "",
   businessName: "",
   ownerName: "",
   email: "",
@@ -120,23 +128,60 @@ const initialValues: SponsorFormValues = {
   terms: false,
 };
 
+// Helper functions for event data
+const getEventId = (event: any): string => event?._id || "";
+const getEventLabel = (event: any): string => {
+  if (!event) return "";
+  const title = event.title || "Untitled Event";
+  const dateTime = event.eventDateTime 
+    ? new Date(event.eventDateTime).toLocaleDateString()
+    : event.date || "";
+  return `${title}${dateTime ? ` - ${dateTime}` : ""}`;
+};
+
 const SponsorForm: React.FC = () => {
-  const dispatch = useDispatch<any>(); // Using 'any' to avoid strict store typing issues
+  const dispatch = useDispatch<any>();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // ✅ 1. Fetch Sponsors on Load using the Thunk
+  // Get events from Redux store
+  const { events = [], loading, error } = useSelector(
+    (state: RootState) => state.dashboard 
+  );
+
+  // Fetch events on mount
+  useEffect(() => {
+    dispatch(fetchEvents());
+  }, [dispatch]);
+
+  // Filter only published and active events for frontend display
+  const publishedEvents = useMemo(() => {
+    const list = Array.isArray(events) ? events : [];
+    return list.filter((event: any) => 
+      event?.status === "published" && !!event?.isActive
+    );
+  }, [events]);
+
+  // Create event options for dropdown
+  const eventOptions: UiEventOption[] = useMemo(() => {
+    return publishedEvents
+      .map((e: any) => ({
+        value: getEventId(e),
+        label: getEventLabel(e),
+      }))
+      .filter((opt) => opt.value); // remove invalid ids
+  }, [publishedEvents]);
+
+  // Fetch sponsors on mount
   useEffect(() => {
     const loadSponsors = async () => {
       try {
-        // Dispatch fetch action and unwrap result
         const result = await dispatch(fetchSponsorsAsync({})).unwrap();
         if (result && Array.isArray(result.sponsors)) {
           setSponsors(result.sponsors);
         } else if (Array.isArray(result)) {
-           // Handle case where API returns array directly
-           setSponsors(result);
+          setSponsors(result);
         }
       } catch (err) {
         console.error("Failed to load sponsors", err);
@@ -145,7 +190,6 @@ const SponsorForm: React.FC = () => {
     loadSponsors();
   }, [dispatch]);
 
-  // ✅ 2. Handle Submit using Redux Thunk
   const handleSubmit = async (
     values: SponsorFormValues,
     { resetForm, setSubmitting }: FormikHelpers<SponsorFormValues>
@@ -153,8 +197,6 @@ const SponsorForm: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // We pass the raw values object. 
-      // The thunk 'submitSponsorAsync' handles FormData conversion.
       const result = await dispatch(submitSponsorAsync(values)).unwrap();
 
       const saved = result?.sponsor as Sponsor | undefined;
@@ -194,6 +236,8 @@ const SponsorForm: React.FC = () => {
     }
   };
 
+  const isSelectDisabled = loading || eventOptions.length === 0;
+
   return (
     <div className="min-h-screen bg-black text-[#f0b400]">
       <Header />
@@ -215,8 +259,58 @@ const SponsorForm: React.FC = () => {
             validationSchema={SponsorSchema}
             onSubmit={handleSubmit}
           >
-            {({ isSubmitting, setFieldValue, values, errors }) => (
+            {({ isSubmitting, setFieldValue, values, errors, touched }) => (
               <Form>
+                {/* Event Selection */}
+                <div className="mb-8">
+                  <label className="block text-[#f0b400] text-sm font-bold mb-2">
+                    Select Event *
+                  </label>
+
+                  <Field
+                    as="select"
+                    name="selectedEvent"
+                    disabled={isSelectDisabled}
+                    className={`w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none cursor-pointer transition ${
+                      errors.selectedEvent && touched.selectedEvent
+                        ? "border-red-500"
+                        : "border-[#f0b400] focus:border-[#f0b400]"
+                    } ${isSelectDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
+                  >
+                    <option value="">
+                      {loading
+                        ? "Loading events…"
+                        : eventOptions.length
+                        ? "Select the event you want to sponsor…"
+                        : "No active events available"}
+                    </option>
+
+                    {eventOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </Field>
+
+                  {Boolean(error) && (
+                    <p className="text-red-500 text-xs font-semibold mt-1.5">
+                      {String(error)}
+                    </p>
+                  )}
+
+                  <ErrorMessage
+                    name="selectedEvent"
+                    component="p"
+                    className="text-red-500 text-xs font-semibold mt-1.5"
+                  />
+
+                  <p className="text-[#f0b400]/70 text-xs mt-1.5">
+                    Choose the event you want to sponsor
+                  </p>
+                </div>
+
+                <div className="h-0.5 bg-gradient-to-r from-[#f0b400]/40 to-transparent my-8 md:my-10" />
+
                 {/* SECTION A - Business Details */}
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black font-black text-lg md:text-xl">
@@ -283,7 +377,7 @@ const SponsorForm: React.FC = () => {
                     </label>
                     <Field
                       name="phone"
-                       maxLength={11}
+                      maxLength={11}
                       placeholder="+1 (___) ___-____"
                       className="w-full px-4 py-3.5 text-sm text-white bg-black border-2 rounded-xl outline-none transition border-[#f0b400] focus:border-[#f0b400]"
                     />
@@ -528,7 +622,6 @@ const SponsorForm: React.FC = () => {
                   <div className="w-24 h-16 md:w-28 md:h-20 flex items-center justify-center mb-3 bg-black">
                     {s.logoPath ? (
                       <img
-                        /* 👇 Updated: Uses API_BASE_URL via backticks */
                         src={`${API_BASE_URL}${s.logoPath}`}
                         alt={`${s.businessName} logo`}
                         className="max-w-full max-h-full object-contain"

@@ -20,11 +20,11 @@ export const fetchVendors = createAsyncThunk(
       setTokenIfAny();
       const res = await dashboardService.vendors();
       const data = res;
-      console.log("Fetched vendors data:", data);
+      console.log("Fetched vendors data:", data.data);
       if (Array.isArray(data)) {
         return { items: data, total: data.length, page: 1, pages: 1 };
       }
-      return data;
+      return data.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || "Failed");
     }
@@ -68,7 +68,7 @@ export const fetchSponsors = createAsyncThunk(
       setTokenIfAny();
       const res = await dashboardService.sponsors();
       console.log("Fetched sponsors data:", res);
-      return res;
+      return res.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || "Failed");
     }
@@ -156,7 +156,7 @@ export const fetchVolunteers = createAsyncThunk(
       setTokenIfAny();
       const res = await dashboardService.volunteers();
       console.log("Fetched volunteers data:", res);
-      return res;
+      return res.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch volunteers");
     }

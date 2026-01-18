@@ -16,8 +16,8 @@ interface EventDetailsModalProps {
 interface EventFormValues {
   title: string;
   badge: string;
-  date: string;
-  time: string;
+  eventDate: string;
+  eventTime: string;
   location: string;
   description: string;
   highlights: string[];
@@ -32,8 +32,8 @@ interface EventFormValues {
 const validationSchema = Yup.object({
   title: Yup.string().required('Event title is required'),
   badge: Yup.string().required('Badge is required'),
-  date: Yup.string().required('Date is required'),
-  time: Yup.string().required('Time is required'),
+  eventDate: Yup.string().required('Event date is required'),
+  eventTime: Yup.string().required('Event time is required'),
   location: Yup.string().required('Location is required'),
   description: Yup.string().required('Description is required'),
   highlights: Yup.array().of(Yup.string()),
@@ -48,12 +48,30 @@ const validationSchema = Yup.object({
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, onSuccess }) => {
   const dispatch = useDispatch<AppDispatch>();
 
+  // Helper to extract date and time from eventDateTime
+  const getDateFromDateTime = (dateTimeString: string) => {
+    if (!dateTimeString) return '';
+    const date = new Date(dateTimeString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTimeFromDateTime = (dateTimeString: string) => {
+    if (!dateTimeString) return '';
+    const date = new Date(dateTimeString);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   const formik = useFormik<EventFormValues>({
     initialValues: {
       title: event?.title || '',
       badge: event?.badge || '',
-      date: event?.date || '',
-      time: event?.time || '',
+      eventDate: event?.eventDateTime ? getDateFromDateTime(event.eventDateTime) : '',
+      eventTime: event?.eventDateTime ? getTimeFromDateTime(event.eventDateTime) : '',
       location: event?.location || '',
       description: event?.description || '',
       highlights: event?.highlights?.length > 0 ? event.highlights : [''],
@@ -65,11 +83,40 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
       isActive: event?.isActive !== undefined ? event.isActive : true
     },
     validationSchema,
+    validate: (values) => {
+      const errors: any = {};
+      
+      // Validate that combined date and time is in the future
+      if (values.eventDate && values.eventTime) {
+        const eventDateTime = new Date(`${values.eventDate}T${values.eventTime}`);
+        const now = new Date();
+        
+        if (eventDateTime <= now) {
+          errors.eventDate = 'Event date and time must be in the future';
+          errors.eventTime = 'Event date and time must be in the future';
+        }
+      }
+      
+      return errors;
+    },
     onSubmit: async (values, { setSubmitting }) => {
       try {
+        // Combine date and time into ISO string
+        const eventDateTime = new Date(`${values.eventDate}T${values.eventTime}`).toISOString();
+        
         const payload = {
-          ...values,
-          highlights: values.highlights.filter(h => h.trim() !== '')
+          title: values.title,
+          badge: values.badge,
+          eventDateTime: eventDateTime,
+          location: values.location,
+          description: values.description,
+          highlights: values.highlights.filter(h => h.trim() !== ''),
+          primaryCtaLabel: values.primaryCtaLabel,
+          primaryCtaHref: values.primaryCtaHref,
+          secondaryCtaLabel: values.secondaryCtaLabel,
+          secondaryCtaHref: values.secondaryCtaHref,
+          status: values.status,
+          isActive: values.isActive
         };
 
         if (event) {
@@ -77,13 +124,14 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
           Toast.fire('Event updated successfully');
         } else {
           await dispatch(createEvent(payload)).unwrap();
-          Toast.fire("Event created successfully")
-         }
+          Toast.fire("Event created successfully");
+        }
         onSuccess();
         onClose();
       } catch (error: any) {
         console.error('Failed to save event:', error);
-        Toast.fire(error || 'Failed to save event');
+        const errorMessage = error?.message || error?.error || 'Failed to save event';
+        Toast.fire(errorMessage);
       } finally {
         setSubmitting(false);
       }
@@ -116,9 +164,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 pb-24">
-      <div className="bg-black-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
+      <div className="bg-zinc-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
         {/* Fixed Header */}
-        <div className="bg-black-900 border-b border-yellow-500/30 px-6 py-4 flex justify-between items-center flex-shrink-0">
+        <div className="bg-zinc-900 border-b border-yellow-500/30 px-6 py-4 flex justify-between items-center flex-shrink-0">
           <h2 className="text-2xl font-bold text-yellow-500">
             {event ? 'Edit Event' : 'Create New Event'}
           </h2>
@@ -178,40 +226,44 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Date *
+                    Event Date *
                   </label>
                   <input
-                    type="text"
-                    name="date"
-                    value={formik.values.date}
+                    type="date"
+                    name="eventDate"
+                    value={formik.values.eventDate}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    placeholder="e.g., Saturday - March 14, 2026"
-                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
-                  {formik.touched.date && formik.errors.date && (
-                    <p className="mt-1 text-xs text-red-400">{formik.errors.date}</p>
+                  {formik.touched.eventDate && formik.errors.eventDate && (
+                    <p className="mt-1 text-xs text-red-400">{formik.errors.eventDate}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Time *
+                    Event Time *
                   </label>
                   <input
-                    type="text"
-                    name="time"
-                    value={formik.values.time}
+                    type="time"
+                    name="eventTime"
+                    value={formik.values.eventTime}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    placeholder="e.g., 10:00 AM - 6:00 PM"
-                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
-                  {formik.touched.time && formik.errors.time && (
-                    <p className="mt-1 text-xs text-red-400">{formik.errors.time}</p>
+                  {formik.touched.eventTime && formik.errors.eventTime && (
+                    <p className="mt-1 text-xs text-red-400">{formik.errors.eventTime}</p>
                   )}
                 </div>
               </div>
+
+              {(formik.errors.eventDate || formik.errors.eventTime) && (
+                <p className="text-xs text-gray-400">
+                  Event must be scheduled in the future
+                </p>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -223,7 +275,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                   value={formik.values.location}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  placeholder="e.g., Tech Hub, Downtown"
+                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
                 />
                 {formik.touched.location && formik.errors.location && (
                   <p className="mt-1 text-xs text-red-400">{formik.errors.location}</p>
@@ -240,7 +293,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   rows={4}
-                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  placeholder="Describe the event..."
+                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
                 />
                 {formik.touched.description && formik.errors.description && (
                   <p className="mt-1 text-xs text-red-400">{formik.errors.description}</p>

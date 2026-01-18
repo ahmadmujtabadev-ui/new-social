@@ -164,7 +164,7 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchVendors.fulfilled, (state, action) => {
         state.loading = false;
-        state.vendors = action.payload.items;
+        state.vendors = action.payload;
         state.totalPages = action.payload.pages;
         state.currentPage = action.payload.page;
       })
