@@ -157,7 +157,7 @@ const VendorsPage: React.FC = () => {
             value={selectedEventId}
             onChange={(e) => setSelectedEventId(e.target.value)}
             disabled={isSelectDisabled}
-            className={`w-full px-4 py-2.5 bg-gray-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+            className={`w-full px-4 py-2.5 bg-black-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
               isSelectDisabled ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
@@ -184,7 +184,7 @@ const VendorsPage: React.FC = () => {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500"
+            className="w-full px-4 py-2.5 bg-black-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500"
           >
             <option value="">All Statuses</option>
             <option value="booked">Booked</option>

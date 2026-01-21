@@ -177,7 +177,7 @@ const VolunteersPage: React.FC = () => {
               value={selectedEventId}
               onChange={(e) => handleEventChange(e.target.value)}
               disabled={isSelectDisabled}
-              className={`w-full px-4 py-2.5 bg-gray-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 ${
+              className={`w-full px-4 py-2.5 bg-black-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 ${
                 isSelectDisabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >

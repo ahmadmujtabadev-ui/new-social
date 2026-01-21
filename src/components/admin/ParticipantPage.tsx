@@ -176,7 +176,7 @@ console.log(selectedParticipant,showModal)
       </div>
 
       {/* Event Filter */}
-      <div className="bg-gray-900 rounded-lg border border-yellow-500/30 p-4">
+      <div className="bg-blsck-900 rounded-lg border border-yellow-500/30 p-4">
         <div className="flex items-center gap-3">
           <Calendar className="w-5 h-5 text-yellow-500" />
           <div className="flex-1">
@@ -209,7 +209,7 @@ console.log(selectedParticipant,showModal)
       </div>
 
       {/* Search */}
-      <div className="bg-gray-900 rounded-lg border border-yellow-500/30 p-4">
+      <div className="bg-black-900 rounded-lg border border-yellow-500/30 p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-yellow-500 w-5 h-5" />
           <input
@@ -272,7 +272,7 @@ console.log(selectedParticipant,showModal)
       </div>
 
       {/* Table */}
-      <div className="bg-gray-900 rounded-lg border border-yellow-500/30 overflow-hidden">
+      <div className="bg-black-900 rounded-lg border border-yellow-500/30 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="w-8 h-8 animate-spin text-yellow-500" />

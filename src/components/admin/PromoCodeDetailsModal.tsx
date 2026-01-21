@@ -1,8 +1,8 @@
 // src/components/modal/PromoCodeDetailsModal.tsx
 import React, { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/redux/store';
-import { createPromoCode, fetchPromoCodes, updatePromoCode } from '@/services/dashbord/asyncThunk';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { createPromoCode, fetchPromoCodes, updatePromoCode, fetchEvents } from '@/services/dashbord/asyncThunk';
 import Toast from '../Toast';
 
 interface PromoCodeDetailsModalProps {
@@ -16,6 +16,8 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
     onClose,
 }) => {
     const dispatch = useDispatch<AppDispatch>();
+    const { events = [] } = useSelector((state: RootState) => state.dashboard);
+    console.log(events)
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         code: '',
@@ -25,8 +27,16 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
         startDate: '',
         endDate: '',
         isActive: true,
-        usageLimit: '',
+        promoScope: 'all' as 'all' | 'specific',
+        applicableEvents: [] as string[],
+        maxDiscountAmount: '',
+        minPurchaseAmount: '',
     });
+
+    // Fetch events when modal opens
+    useEffect(() => {
+        dispatch(fetchEvents());
+    }, [dispatch]);
 
     useEffect(() => {
         if (promo) {
@@ -38,7 +48,10 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                 startDate: promo.startDate ? new Date(promo.startDate).toISOString().split('T')[0] : '',
                 endDate: promo.endDate ? new Date(promo.endDate).toISOString().split('T')[0] : '',
                 isActive: promo.isActive !== undefined ? promo.isActive : true,
-                usageLimit: promo.usageLimit?.toString() || '',
+                promoScope: promo.promoScope || 'all',
+                applicableEvents: promo.applicableEvents?.map((e: any) => e._id || e) || [],
+                maxDiscountAmount: promo.maxDiscountAmount?.toString() || '',
+                minPurchaseAmount: promo.minPurchaseAmount?.toString() || '',
             });
         }
     }, [promo]);
@@ -54,8 +67,39 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
         }
     };
 
+    const handleEventToggle = (eventId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            applicableEvents: prev.applicableEvents.includes(eventId)
+                ? prev.applicableEvents.filter(id => id !== eventId)
+                : [...prev.applicableEvents, eventId]
+        }));
+    };
+
+    const handleSelectAllEvents = () => {
+        const allEventIds = events.map((e: any) => e._id);
+        setFormData(prev => ({
+            ...prev,
+            applicableEvents: allEventIds
+        }));
+    };
+
+    const handleDeselectAllEvents = () => {
+        setFormData(prev => ({
+            ...prev,
+            applicableEvents: []
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validate event-specific promos
+        if (formData.promoScope === 'specific' && formData.applicableEvents.length === 0) {
+            Toast.fire('Please select at least one event for specific scope promos');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -67,7 +111,10 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                 startDate: formData.startDate,
                 endDate: formData.endDate,
                 isActive: formData.isActive,
-                usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null,
+                promoScope: formData.promoScope,
+                applicableEvents: formData.promoScope === 'specific' ? formData.applicableEvents : [],
+                maxDiscountAmount: formData.maxDiscountAmount ? parseFloat(formData.maxDiscountAmount) : null,
+                minPurchaseAmount: formData.minPurchaseAmount ? parseFloat(formData.minPurchaseAmount) : 0,
             };
 
             if (promo) {
@@ -88,9 +135,35 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
         }
     };
 
+    // Helper function to get event ID
+    const getEventId = (event: any): string => {
+        return String(event?._id ?? event?.id ?? "");
+    };
+
+    // Helper function to get event label
+    const getEventLabel = (event: any): string => {
+        return String(event?.title ?? event?.name ?? event?.eventName ?? "Untitled Event");
+    };
+
+    // Helper function to get event date
+    const getEventDate = (event: any): string => {
+        const dateField = event?.date ?? event?.startDate ?? event?.eventDate;
+        if (!dateField) return '';
+        try {
+            return new Date(dateField).toLocaleDateString();
+        } catch {
+            return '';
+        }
+    };
+
+    // Filter only published and active events
+    const availableEvents = events.filter((event: any) => 
+        event?.status === "published" && !!event?.isActive
+    );
+
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900 border border-yellow-500/30 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-zinc-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-6">
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6">
@@ -106,142 +179,282 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Code */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Promo Code *
-                            </label>
-                            <input
-                                type="text"
-                                name="code"
-                                value={formData.code}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g., SUMMER25"
-                                className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 uppercase"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                                Use uppercase letters and numbers (no spaces)
-                            </p>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Basic Info Section */}
+                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Basic Information</h3>
+                            
+                            <div className="space-y-4">
+                                {/* Code */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Promo Code *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="code"
+                                        value={formData.code}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="e.g., SUMMER25"
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 uppercase"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Use uppercase letters and numbers (no spaces)
+                                    </p>
+                                </div>
+
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Description *
+                                    </label>
+                                    <textarea
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={handleChange}
+                                        required
+                                        rows={3}
+                                        placeholder="e.g., 25% Early Bird Discount"
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Discount Type & Amount */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Discount Type *
-                                </label>
-                                <select
-                                    name="discountType"
-                                    value={formData.discountType}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                >
-                                    <option value="percent">Percentage (%)</option>
-                                    <option value="flat">Flat Amount ($)</option>
-                                </select>
-                            </div>
+                        {/* Discount Settings Section */}
+                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Discount Settings</h3>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Discount Type */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Discount Type *
+                                    </label>
+                                    <select
+                                        name="discountType"
+                                        value={formData.discountType}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    >
+                                        <option value="percent">Percentage (%)</option>
+                                        <option value="flat">Flat Amount ($)</option>
+                                    </select>
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Discount Value *
-                                </label>
+                                {/* Discount Value */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Discount Value *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="discount"
+                                        value={formData.discount}
+                                        onChange={handleChange}
+                                        required
+                                        min="0"
+                                        step={formData.discountType === 'percent' ? '1' : '0.01'}
+                                        max={formData.discountType === 'percent' ? '100' : undefined}
+                                        placeholder={formData.discountType === 'percent' ? '25' : '50.00'}
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                </div>
+
+                                {/* Max Discount Cap */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Max Discount Cap (Optional)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="maxDiscountAmount"
+                                        value={formData.maxDiscountAmount}
+                                        onChange={handleChange}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="e.g., 100"
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Maximum discount amount for % discounts
+                                    </p>
+                                </div>
+
+                                {/* Min Purchase */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Min Purchase Amount (Optional)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="minPurchaseAmount"
+                                        value={formData.minPurchaseAmount}
+                                        onChange={handleChange}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="e.g., 50"
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Minimum purchase required to use code
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Date Range Section */}
+                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Validity Period</h3>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Start Date *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        End Date *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="endDate"
+                                        value={formData.endDate}
+                                        onChange={handleChange}
+                                        required
+                                        min={formData.startDate}
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Event Scope Section */}
+                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Event Applicability</h3>
+                            
+                            <div className="space-y-4">
+                                {/* Promo Scope */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Apply To *
+                                    </label>
+                                    <select
+                                        name="promoScope"
+                                        value={formData.promoScope}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    >
+                                        <option value="all">All Events</option>
+                                        <option value="specific">Specific Events Only</option>
+                                    </select>
+                                </div>
+
+                                {/* Event Selection */}
+                                {formData.promoScope === 'specific' && (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <label className="block text-sm font-medium text-gray-300">
+                                                Select Events *
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSelectAllEvents}
+                                                    className="text-xs px-3 py-1 bg-yellow-900/50 text-yellow-400 border border-yellow-500/30 rounded hover:bg-yellow-900/70 transition-colors"
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDeselectAllEvents}
+                                                    className="text-xs px-3 py-1 bg-zinc-800 text-gray-400 border border-gray-500/30 rounded hover:bg-zinc-700 transition-colors"
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="max-h-64 overflow-y-auto border border-yellow-500/30 rounded-lg p-2 bg-black">
+                                            {availableEvents && availableEvents.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {availableEvents.map((event: any) => {
+                                                        const eventId = getEventId(event);
+                                                        const eventLabel = getEventLabel(event);
+                                                        const eventDate = getEventDate(event);
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={eventId}
+                                                                className="flex items-center gap-3 p-3 hover:bg-yellow-900/20 rounded cursor-pointer transition-colors"
+                                                                onClick={() => handleEventToggle(eventId)}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={formData.applicableEvents.includes(eventId)}
+                                                                    onChange={() => handleEventToggle(eventId)}
+                                                                    className="w-5 h-5 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500"
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <div className="text-white font-medium">{eventLabel}</div>
+                                                                    {eventDate && (
+                                                                        <div className="text-xs text-gray-400">
+                                                                            📅 {eventDate}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 text-gray-400">
+                                                    <div className="text-4xl mb-2">📅</div>
+                                                    <p>No active events available.</p>
+                                                    <p className="text-xs mt-1">Create and publish events first.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {formData.applicableEvents.length > 0 && (
+                                            <p className="text-xs text-yellow-400 mt-2">
+                                                ✓ {formData.applicableEvents.length} event(s) selected
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Status Section */}
+                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Status</h3>
+                            
+                            <div className="flex items-center gap-3">
                                 <input
-                                    type="number"
-                                    name="discount"
-                                    value={formData.discount}
+                                    type="checkbox"
+                                    name="isActive"
+                                    checked={formData.isActive}
                                     onChange={handleChange}
-                                    required
-                                    min="0"
-                                    step={formData.discountType === 'percent' ? '1' : '0.01'}
-                                    max={formData.discountType === 'percent' ? '100' : undefined}
-                                    placeholder={formData.discountType === 'percent' ? '25' : '50.00'}
-                                    className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    className="w-5 h-5 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500"
                                 />
-                            </div>
-                        </div>
-
-                        {/* Description */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Description *
-                            </label>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                required
-                                rows={3}
-                                placeholder="25% Early Bird Discount"
-                                className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                            />
-                        </div>
-
-                        {/* Date Range */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Start Date *
+                                <label className="text-sm font-medium text-gray-300">
+                                    Active (Users can use this code)
                                 </label>
-                                <input
-                                    type="date"
-                                    name="startDate"
-                                    value={formData.startDate}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                />
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    End Date *
-                                </label>
-                                <input
-                                    type="date"
-                                    name="endDate"
-                                    value={formData.endDate}
-                                    onChange={handleChange}
-                                    required
-                                    min={formData.startDate}
-                                    className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Usage Limit */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Usage Limit (Optional)
-                            </label>
-                            <input
-                                type="number"
-                                name="usageLimit"
-                                value={formData.usageLimit}
-                                onChange={handleChange}
-                                min="1"
-                                placeholder="Leave empty for unlimited"
-                                className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                                Maximum number of times this code can be used
-                            </p>
-                        </div>
-
-                        {/* Active Toggle */}
-                        <div className="flex items-center gap-3">
-                            <input
-                                type="checkbox"
-                                name="isActive"
-                                checked={formData.isActive}
-                                onChange={handleChange}
-                                className="w-5 h-5 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500"
-                            />
-                            <label className="text-sm font-medium text-gray-300">
-                                Active (Users can use this code)
-                            </label>
                         </div>
 
                         {/* Actions */}
@@ -249,17 +462,17 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-6 py-2 bg-zinc-800 hover:bg-zinc-700 text-white border border-yellow-500/30 rounded-lg transition-colors"
+                                className="flex-1 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white border border-yellow-500/30 rounded-lg transition-colors font-medium"
                                 disabled={loading}
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                className="flex-1 px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={loading}
                             >
-                                {loading ? 'Saving...' : promo ? 'Update' : 'Create'}
+                                {loading ? 'Saving...' : promo ? 'Update Promo Code' : 'Create Promo Code'}
                             </button>
                         </div>
                     </form>

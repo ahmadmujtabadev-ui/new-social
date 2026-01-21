@@ -5,7 +5,6 @@ import { AppDispatch, RootState } from '@/redux/store';
 import { deletePromoCode, fetchPromoCodes } from '@/services/dashbord/asyncThunk';
 import PromoCodeDetailsModal from './PromoCodeDetailsModal';
 
-
 const PromoCodePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { promoCodes, loading, error } = useSelector((state: RootState) => state.dashboard);
@@ -14,7 +13,7 @@ const PromoCodePage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
-
+console.log(setFilterType,setSearchTerm)
   useEffect(() => {
     loadPromoCodes();
   }, []);
@@ -52,9 +51,8 @@ const PromoCodePage: React.FC = () => {
     const endDate = new Date(promo.endDate);
     const hasNotStarted = now < startDate;
     const hasExpired = now > endDate;
-    const limitReached = promo.usageLimit && promo.usageCount >= promo.usageLimit;
     
-    return promo.isActive && !hasNotStarted && !hasExpired && !limitReached;
+    return promo.isActive && !hasNotStarted && !hasExpired;
   };
 
   const getPromoStatus = (promo: any) => {
@@ -65,7 +63,6 @@ const PromoCodePage: React.FC = () => {
     if (!promo.isActive) return 'Inactive';
     if (now < startDate) return 'Scheduled';
     if (now > endDate) return 'Expired';
-    if (promo.usageLimit && promo.usageCount >= promo.usageLimit) return 'Limit Reached';
     return 'Active';
   };
 
@@ -80,6 +77,8 @@ const PromoCodePage: React.FC = () => {
     if (filterType === 'scheduled') return matchesSearch && new Date(promo.startDate) > new Date();
     if (filterType === 'percent') return matchesSearch && promo.discountType === 'percent';
     if (filterType === 'flat') return matchesSearch && promo.discountType === 'flat';
+    if (filterType === 'global') return matchesSearch && promo.promoScope === 'all';
+    if (filterType === 'event-specific') return matchesSearch && promo.promoScope === 'specific';
     
     return matchesSearch;
   });
@@ -107,30 +106,7 @@ const PromoCodePage: React.FC = () => {
           >
             + Create Promo Code
           </button>
-        </div>
-
-        {/* Search & Filter Bar */}
-        <div className="flex gap-4">
-          <input
-            type="text"
-            placeholder="Search promo codes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 bg-black-900 border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 placeholder-gray-500"
-          />
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2 bg-black-900 border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-          >
-            <option value="all">All Codes</option>
-            <option value="active">Active</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="expired">Expired</option>
-            <option value="percent">Percentage</option>
-            <option value="flat">Flat Amount</option>
-          </select>
-        </div>
+        </div>      
       </div>
 
       {/* Error Message */}
@@ -141,7 +117,7 @@ const PromoCodePage: React.FC = () => {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
         <div className="bg-black-900 border border-yellow-500/30 p-4 rounded-lg">
           <div className="text-sm text-gray-400">Total Codes</div>
           <div className="text-2xl font-bold text-yellow-500">{promoCodes.length}</div>
@@ -165,9 +141,9 @@ const PromoCodePage: React.FC = () => {
           </div>
         </div>
         <div className="bg-black-900 border border-yellow-500/30 p-4 rounded-lg">
-          <div className="text-sm text-gray-400">Total Usage</div>
+          <div className="text-sm text-gray-400">Event Specific</div>
           <div className="text-2xl font-bold text-yellow-500">
-            {promoCodes.reduce((sum, p) => sum + (p.usageCount || 0), 0)}
+            {promoCodes.filter(p => p.promoScope === 'specific').length}
           </div>
         </div>
       </div>
@@ -176,12 +152,11 @@ const PromoCodePage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPromos.map((promo) => {
           const status = getPromoStatus(promo);
-        //   const isValid = isPromoValid(promo);
           
           return (
             <div key={promo._id} className="bg-black-900 border border-yellow-500/30 rounded-lg overflow-hidden hover:border-yellow-500 transition-all">
               <div className="p-6">
-                {/* Code Badge */}
+                {/* Code Badge & Status */}
                 <div className="mb-3 flex items-center justify-between">
                   <span className="inline-block px-4 py-2 text-lg font-bold bg-yellow-900/50 text-yellow-400 border border-yellow-500/30 rounded">
                     {promo.code}
@@ -190,11 +165,23 @@ const PromoCodePage: React.FC = () => {
                     status === 'Active' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
                     status === 'Scheduled' ? 'bg-blue-900/50 text-blue-400 border border-blue-500/30' :
                     status === 'Expired' ? 'bg-gray-900/50 text-gray-400 border border-gray-500/30' :
-                    status === 'Limit Reached' ? 'bg-red-900/50 text-red-400 border border-red-500/30' :
                     'bg-gray-900/50 text-gray-400 border border-gray-500/30'
                   }`}>
                     {status}
                   </span>
+                </div>
+
+                {/* Scope Badge */}
+                <div className="mb-3">
+                  {promo.promoScope === 'all' ? (
+                    <span className="inline-block px-3 py-1 text-xs font-medium bg-black-400 text-yellow-400 border border-yellow-500/30 rounded-full">
+                      🌐 All Events
+                    </span>
+                  ) : (
+                    <span className="inline-block px-3 py-1 text-xs font-medium bg-black text-yellow-400 border border-yellow-500/30 rounded-full">
+                      🎯 {promo.applicableEvents?.length || 0} Specific Event(s)
+                    </span>
+                  )}
                 </div>
 
                 {/* Description */}
@@ -210,7 +197,31 @@ const PromoCodePage: React.FC = () => {
                   <div className="text-xs text-gray-400 mt-1">
                     {promo.discountType === 'percent' ? 'Percentage Off' : 'Flat Discount'}
                   </div>
+                  {promo.maxDiscountAmount && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      Max: ${promo.maxDiscountAmount}
+                    </div>
+                  )}
+                  {promo.minPurchaseAmount > 0 && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      Min Purchase: ${promo.minPurchaseAmount}
+                    </div>
+                  )}
                 </div>
+
+                {/* Event List (for specific promos) */}
+                {promo.promoScope === 'specific' && promo.applicableEvents && promo.applicableEvents.length > 0 && (
+                  <div className="mb-4 p-3 bg-black border border-yellow-400 rounded">
+                    <div className="text-xs font-semibold text-yellow-400 mb-2">Applicable Events:</div>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {promo.applicableEvents.map((event: any) => (
+                        <div key={event._id} className="text-xs text-gray-300">
+                          • {event.title || event._id}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Date Range */}
                 <div className="space-y-2 mb-4 text-sm text-gray-400">
@@ -224,32 +235,6 @@ const PromoCodePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Usage Stats */}
-                {promo.usageLimit && (
-                  <div className="mb-4 p-3 bg-black border border-yellow-500/30 rounded">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-400">Usage</span>
-                      <span className="text-xs text-yellow-400">
-                        {promo.usageCount || 0} / {promo.usageLimit}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-yellow-500 h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min(((promo.usageCount || 0) / promo.usageLimit) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-
-                {!promo.usageLimit && (
-                  <div className="mb-4 p-3 bg-black border border-yellow-500/30 rounded">
-                    <div className="text-xs text-gray-400">Usage Count</div>
-                    <div className="text-lg font-bold text-yellow-500">{promo.usageCount || 0}</div>
-                    <div className="text-xs text-gray-400">Unlimited uses</div>
-                  </div>
-                )}
-
                 {/* Actions */}
                 <div className="flex gap-2">
                   <button
@@ -260,7 +245,7 @@ const PromoCodePage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => handleDelete(promo._id)}
-                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-yellow-500 border border-yellow-500/30 px-4 py-2 rounded text-sm transition-colors"
+                    className="flex-1 bg-black-800 hover:bg-black-700 text-yellow-500 border border-yellow-500/30 px-4 py-2 rounded text-sm transition-colors"
                   >
                     Delete
                   </button>
@@ -274,7 +259,6 @@ const PromoCodePage: React.FC = () => {
       {/* Empty State */}
       {filteredPromos.length === 0 && !loading && (
         <div className="text-center py-12 bg-zinc-900 border border-yellow-500/30 rounded-lg">
-          <div className="text-yellow-500 text-6xl mb-4">🎟️</div>
           <h3 className="text-xl font-semibold text-yellow-500 mb-2">No promo codes found</h3>
           <p className="text-gray-400 mb-4">
             {searchTerm ? 'Try adjusting your search or filters' : 'Create your first promo code to get started'}

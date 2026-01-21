@@ -163,7 +163,7 @@ const SponsorsPage: React.FC = () => {
               value={selectedEventId}
               onChange={(e) => handleEventChange(e.target.value)}
               disabled={isSelectDisabled}
-              className={`w-full px-4 py-2.5 bg-gray-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 ${
+              className={`w-full px-4 py-2.5 bg-black-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 ${
                 isSelectDisabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
@@ -193,7 +193,7 @@ const SponsorsPage: React.FC = () => {
             placeholder="Search by business name, owner, or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 text-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 placeholder-gray-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-black-900 border border-gray-700 text-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 placeholder-gray-500"
           />
         </div>
       </div>
@@ -266,7 +266,7 @@ const SponsorsPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-900 border-b border-yellow-500">
+              <thead className="bg-black-900 border-b border-yellow-500">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-yellow-500 uppercase">
                     Business

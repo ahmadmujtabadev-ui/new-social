@@ -164,16 +164,16 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 pb-24">
-      <div className="bg-zinc-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
+      <div className="bg-black border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
         {/* Fixed Header */}
-        <div className="bg-zinc-900 border-b border-yellow-500/30 px-6 py-4 flex justify-between items-center flex-shrink-0">
+        <div className="bg-black border-b border-yellow-500/30 px-6 py-4 flex justify-between items-center flex-shrink-0">
           <h2 className="text-2xl font-bold text-yellow-500">
             {event ? 'Edit Event' : 'Create New Event'}
           </h2>
           <button
             onClick={onClose}
             type="button"
-            className="text-gray-400 hover:text-yellow-500 text-2xl"
+            className="text-yellow-500/60 hover:text-yellow-500 text-2xl"
           >
             ×
           </button>
@@ -188,7 +188,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                     Event Title *
                   </label>
                   <input
@@ -197,15 +197,15 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                     value={formik.values.title}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
                   {formik.touched.title && formik.errors.title && (
-                    <p className="mt-1 text-xs text-red-400">{formik.errors.title}</p>
+                    <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.title}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                     Badge *
                   </label>
                   <input
@@ -215,17 +215,17 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     placeholder="e.g., Featured Event"
-                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                   />
                   {formik.touched.badge && formik.errors.badge && (
-                    <p className="mt-1 text-xs text-red-400">{formik.errors.badge}</p>
+                    <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.badge}</p>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                     Event Date *
                   </label>
                   <input
@@ -234,15 +234,15 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                     value={formik.values.eventDate}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
                   {formik.touched.eventDate && formik.errors.eventDate && (
-                    <p className="mt-1 text-xs text-red-400">{formik.errors.eventDate}</p>
+                    <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.eventDate}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                     Event Time *
                   </label>
                   <input
@@ -251,22 +251,22 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                     value={formik.values.eventTime}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
                   {formik.touched.eventTime && formik.errors.eventTime && (
-                    <p className="mt-1 text-xs text-red-400">{formik.errors.eventTime}</p>
+                    <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.eventTime}</p>
                   )}
                 </div>
               </div>
 
               {(formik.errors.eventDate || formik.errors.eventTime) && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-yellow-500/60">
                   Event must be scheduled in the future
                 </p>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                   Location *
                 </label>
                 <input
@@ -276,15 +276,15 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   placeholder="e.g., Tech Hub, Downtown"
-                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                 />
                 {formik.touched.location && formik.errors.location && (
-                  <p className="mt-1 text-xs text-red-400">{formik.errors.location}</p>
+                  <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.location}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                   Description *
                 </label>
                 <textarea
@@ -294,10 +294,10 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                   onBlur={formik.handleBlur}
                   rows={4}
                   placeholder="Describe the event..."
-                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                  className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                 />
                 {formik.touched.description && formik.errors.description && (
-                  <p className="mt-1 text-xs text-red-400">{formik.errors.description}</p>
+                  <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.description}</p>
                 )}
               </div>
             </div>
@@ -322,13 +322,13 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                     value={highlight}
                     onChange={(e) => handleHighlightChange(index, e.target.value)}
                     placeholder="e.g., Free Entry"
-                    className="flex-1 px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                    className="flex-1 px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                   />
                   {formik.values.highlights.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeHighlight(index)}
-                      className="px-3 py-2 text-red-400 hover:text-red-300 border border-red-500/30 rounded-lg"
+                      className="px-3 py-2 text-yellow-500 hover:text-yellow-400 border border-yellow-500/30 rounded-lg"
                     >
                       Remove
                     </button>
@@ -344,7 +344,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                       Primary CTA Label *
                     </label>
                     <input
@@ -354,15 +354,15 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
                       placeholder="e.g., Get Free Tickets"
-                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                     />
                     {formik.touched.primaryCtaLabel && formik.errors.primaryCtaLabel && (
-                      <p className="mt-1 text-xs text-red-400">{formik.errors.primaryCtaLabel}</p>
+                      <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.primaryCtaLabel}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                       Primary CTA Link *
                     </label>
                     <input
@@ -372,17 +372,17 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
                       placeholder="https://..."
-                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                     />
                     {formik.touched.primaryCtaHref && formik.errors.primaryCtaHref && (
-                      <p className="mt-1 text-xs text-red-400">{formik.errors.primaryCtaHref}</p>
+                      <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.primaryCtaHref}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                       Secondary CTA Label *
                     </label>
                     <input
@@ -392,15 +392,15 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
                       placeholder="e.g., Join us"
-                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                     />
                     {formik.touched.secondaryCtaLabel && formik.errors.secondaryCtaLabel && (
-                      <p className="mt-1 text-xs text-red-400">{formik.errors.secondaryCtaLabel}</p>
+                      <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.secondaryCtaLabel}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                       Secondary CTA Link *
                     </label>
                     <input
@@ -410,10 +410,10 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
                       placeholder="/#joinus"
-                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-500"
+                      className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-yellow-500/40"
                     />
                     {formik.touched.secondaryCtaHref && formik.errors.secondaryCtaHref && (
-                      <p className="mt-1 text-xs text-red-400">{formik.errors.secondaryCtaHref}</p>
+                      <p className="mt-1 text-xs text-yellow-500/70">{formik.errors.secondaryCtaHref}</p>
                     )}
                   </div>
                 </div>
@@ -426,7 +426,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-yellow-500/70 mb-1">
                     Publication Status
                   </label>
                   <select
@@ -434,7 +434,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                     value={formik.values.status}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-black border border-yellow-500/30 text-yellow-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   >
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
@@ -451,7 +451,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                       onChange={formik.handleChange}
                       className="w-4 h-4 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500"
                     />
-                    <span className="text-sm font-medium text-gray-300">Active Event</span>
+                    <span className="text-sm font-medium text-yellow-500/70">Active Event</span>
                   </label>
                 </div>
               </div>
@@ -460,11 +460,11 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
         </div>
 
         {/* Fixed Footer */}
-        <div className="bg-zinc-900 border-t border-yellow-500/30 px-6 py-4 flex gap-3 justify-end flex-shrink-0">
+        <div className="bg-black border-t border-yellow-500/30 px-6 py-4 flex gap-3 justify-end flex-shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 border border-yellow-500/30 rounded-lg text-gray-300 hover:bg-zinc-800 transition-colors"
+            className="px-6 py-2 border border-yellow-500/30 rounded-lg text-yellow-500 hover:bg-yellow-500/10 transition-colors"
           >
             Cancel
           </button>
