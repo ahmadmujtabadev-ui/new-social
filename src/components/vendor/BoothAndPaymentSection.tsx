@@ -42,6 +42,9 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
   const [promoError, setPromoError] = useState("");
 
+  // GET EVENT ID FROM FORM VALUES
+  const eventId = values.selectedEvent;
+
   // Fetch promo codes on mount
   useEffect(() => {
     if (promoCodes.length === 0) {
@@ -56,12 +59,17 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
     return "";
   };
 
-  // Validate promo code from fetched promo codes
+  // ✅ Validate promo code against the selected event
   const validatePromo = (code: string): {
     valid: boolean;
     message: string;
     promo?: any;
   } => {
+    // CHECK IF EVENT IS SELECTED
+    if (!eventId) {
+      return { valid: false, message: "Please select an event first." };
+    }
+
     const promo = promoCodes.find(p => p.code === code.toUpperCase());
     
     if (!promo) {
@@ -81,13 +89,13 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
     if (now < start) {
       return { 
         valid: false, 
-        message: `This promo will start on ${new Date(promo.startDate).toLocaleDateString()}.` 
+        message: `This promo will start on ${start.toLocaleDateString()}.` 
       };
     }
     if (now > end) {
       return { 
         valid: false, 
-        message: `This promo expired on ${new Date(promo.endDate).toLocaleDateString()}.` 
+        message: `This promo expired on ${end.toLocaleDateString()}.` 
       };
     }
 
@@ -96,7 +104,35 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
       return { valid: false, message: "This promo code has reached its usage limit." };
     }
 
-    return { valid: true, message: "Promo applied.", promo };
+    // ✅ CRITICAL: Check if promo is valid for the SELECTED EVENT
+    if (promo.promoScope === 'specific') {
+      // Check if this promo is applicable to the selected event
+      const isValidForEvent = promo.applicableEvents?.some(
+        (evt: any) => {
+          // Handle both populated (object) and non-populated (string) event references
+          const evtId = evt._id || evt;
+          return evtId.toString() === eventId.toString();
+        }
+      );
+      
+      if (!isValidForEvent) {
+        return { 
+          valid: false, 
+          message: "This promo code is not valid for the selected event." 
+        };
+      }
+    }
+    // If promoScope is 'all', it's valid for all events
+
+    // Check minimum purchase amount
+    if (promo.minPurchaseAmount && basePrice < promo.minPurchaseAmount) {
+      return {
+        valid: false,
+        message: `Minimum purchase amount of $${promo.minPurchaseAmount.toFixed(2)} required.`
+      };
+    }
+
+    return { valid: true, message: "Promo applied successfully!", promo };
   };
 
   // Restore applied promo from form values on mount
@@ -118,13 +154,35 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
     }
   }, [values.appliedPromoCode, values.appliedPromoType, values.appliedPromoDiscount]);
 
+  // Re-validate promo if event changes
+  useEffect(() => {
+    if (appliedPromo && eventId) {
+      const result = validatePromo(appliedPromo.code);
+      if (!result.valid) {
+        setPromoError(result.message);
+        setAppliedPromo(null);
+      }
+    }
+  }, [eventId]);
+
   const discountAmount = useMemo(() => {
     if (!appliedPromo) return 0;
+    
+    let amount = 0;
     if (appliedPromo.discountType === "percent") {
-      return (basePrice * appliedPromo.discount) / 100;
+      amount = (basePrice * appliedPromo.discount) / 100;
+    } else {
+      amount = appliedPromo.discount;
     }
-    return appliedPromo.discount;
-  }, [appliedPromo, basePrice]);
+
+    // Apply max discount cap if it exists
+    const promoData = promoCodes.find(p => p.code === appliedPromo.code);
+    if (promoData?.maxDiscountAmount && amount > promoData.maxDiscountAmount) {
+      amount = promoData.maxDiscountAmount;
+    }
+
+    return Math.min(amount, basePrice);
+  }, [appliedPromo, basePrice, promoCodes]);
 
   const discountedPrice = useMemo(() => {
     if (!appliedPromo) return basePrice;
@@ -163,7 +221,7 @@ const BoothAndPaymentSection: React.FC<BoothAndPaymentProps> = ({
       return;
     }
 
-    // Validate against fetched promo codes
+    // ✅ Validate against selected event
     const result = validatePromo(code);
     
     if (!result.valid || !result.promo) {

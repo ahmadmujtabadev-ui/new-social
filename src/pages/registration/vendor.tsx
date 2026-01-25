@@ -9,10 +9,10 @@ import Header from "@/components/Homepage.tsx/header";
 import { TermsCheckboxWithModal } from "@/components/common/TermsModal";
 import { BOOTH_KEY, SCROLL_KEY } from "@/lib/vendorformconfig";
 import ContactBusinessSection from "@/components/vendor/ContactBusinessSection";
-import BoothAndPaymentSection from "@/components/vendor/BoothAndPaymentSection";
 import { resetFormState, selectForms } from "@/redux/slices/userSlice";
 import { submitVendorAsync } from "@/services/auth/asyncThunk";
 import CategorySection from "@/components/vendor/CategorySection";
+import BoothAndPaymentSection from "@/components/vendor/BoothAndPaymentSection";
 
 // ============================================================================
 // TYPES
@@ -607,7 +607,7 @@ const VendorForm: React.FC = () => {
 
                 {currentStep === 3 && (
                   <div className="transition-all duration-500 ease-in-out space-y-8">
-                    <BoothAndPaymentSection
+                    <BoothAndPaymentSection 
                       values={values}
                       errors={errors}
                       touched={touched}

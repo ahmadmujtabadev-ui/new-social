@@ -34,7 +34,6 @@ const CATEGORY_COLORS: Record<BoothCategory, string> = {
   food: "rgba(210, 180, 140, 0.7)",
 };
 
-// If you want HELD to appear as BOOKED on the map (gray + locked):
 const HELD_SHOWS_AS_BOOKED = true;
 
 const TABLES: Table[] = [
@@ -93,10 +92,15 @@ function normalizeStatus(raw: any): BoothStatusValue {
 
   if (s === "paid" || s === "confirmed") return "confirmed";
 
-  if (s === "approved" || s === "under_review" || s === "booked") return "booked";
+  if (s === "approved" || s === "under_review" || s === "booked" || s === "expired") {
+    return "booked";
+  }
 
   if (s === "held") return "held";
-  if (s === "available") return "available";
+  
+  if (s === "available" || s === "submitted" || s === "rejected") {
+    return "available";
+  }
 
   return "available";
 }
@@ -131,17 +135,17 @@ export default function SeatingMap() {
 
     const fetchStatus = async () => {
       try {
-        // Your vendor list endpoint response: { items: [...] }
         const url = `${API_BASE_URL}/api/v1/vendor?limit=2000`;
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) return;
 
         const data = await res.json();
-
-        const items = Array.isArray(data?.items) ? data.items : [];
+        console.log("Data", data)
+      
+        const items = Array.isArray(data?.data) ? data.data : [];
+        console.log("items", items)
         const now = new Date();
 
-        // boothNumber -> BoothStatus
         const statusMap = new Map<number, BoothStatus>();
 
         for (const v of items) {
@@ -150,7 +154,6 @@ export default function SeatingMap() {
 
           let status = normalizeStatus(v?.status);
 
-          // If held but expired => treat as available (frontend guard)
           if (status === "held") {
             const heldUntil = parseDateMaybe(v?.bookingTimeline?.heldUntil);
             if (heldUntil && heldUntil < now) {
@@ -158,8 +161,6 @@ export default function SeatingMap() {
             }
           }
 
-          // Optional requirement: show HELD as BOOKED on map
-          // (still keep heldUntil for tooltip if you ever want it)
           const heldUntilISO = v?.bookingTimeline?.heldUntil ?? null;
           const heldBy = v?._id ?? null;
 
@@ -172,6 +173,7 @@ export default function SeatingMap() {
             heldUntil: heldUntilISO,
             heldBy,
           };
+
           const rank = (s: BoothStatusValue) =>
             s === "confirmed" ? 3 : s === "booked" ? 2 : s === "held" ? 1 : 0;
 
@@ -284,7 +286,6 @@ export default function SeatingMap() {
           <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
             <Image src="/venue-map.jpg" alt="Venue Seating Map" fill className="object-contain" priority />
 
-            {/* Tooltip */}
             {hoveredTableData && hoveredStatus && (
               <div
                 className="absolute z-50 bg-white rounded-lg shadow-xl p-3 pointer-events-none border-2 border-blue-500"
@@ -358,7 +359,7 @@ export default function SeatingMap() {
                   onMouseEnter={() => setHoveredTable(table.id)}
                   onMouseLeave={() => setHoveredTable(null)}
                   aria-disabled={!isSelectable}
-                  className="absolute transition-all duration-200 rounded-md border-2 flex items-center justify-center font-bold text-white"
+                  className="absolute transition-all duration-200 rounded-md border-2 flex flex-col items-center justify-center font-bold text-white"
                   style={{
                     left: `${table.x}%`,
                     top: `${table.y}%`,
@@ -368,15 +369,42 @@ export default function SeatingMap() {
                     borderColor: selected ? "#22c55e" : "transparent",
                     transform: hovered && isSelectable && !selected ? "scale(1.05)" : "scale(1)",
                     zIndex: selected ? 30 : hovered ? 20 : 10,
-                    fontSize: selected ? "clamp(6px, 0.8vw, 10px)" : "clamp(10px, 1.5vw, 16px)",
+                    fontSize: booked || held ? "clamp(8px, 1vw, 12px)" : selected ? "clamp(6px, 0.8vw, 10px)" : "clamp(10px, 1.5vw, 16px)",
                     textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
                     cursor: isSelectable ? "pointer" : "not-allowed",
                     opacity: !isSelectable && !selected ? 0.85 : 1,
                   }}
                   aria-label={`Table ${table.id} - ${table.category} - ${boothStatus.status}`}
                 >
-                  {/* Label */}
-                  {booked ? "BOOKED" : held ? "HELD" : selected ? "✓" : ""}
+                  {/* ✅ SHOW BOOKED TEXT */}
+                  {booked && (
+                    <>
+                      <div style={{ fontSize: "clamp(8px, 1vw, 12px)", fontWeight: "900" }}>
+                        BOOKED
+                      </div>
+                      <div style={{ fontSize: "clamp(6px, 0.8vw, 10px)", marginTop: "2px" }}>
+                        #{table.id}
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* SHOW HELD TEXT */}
+                  {held && !booked && (
+                    <>
+                      <div style={{ fontSize: "clamp(8px, 1vw, 12px)", fontWeight: "900" }}>
+                        HELD
+                      </div>
+                      <div style={{ fontSize: "clamp(6px, 0.8vw, 10px)", marginTop: "2px" }}>
+                        #{table.id}
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* SHOW CHECKMARK FOR SELECTED */}
+                  {selected && !booked && !held && "✓"}
+                  
+                  {/* SHOW NOTHING FOR AVAILABLE */}
+                  {!booked && !held && !selected && ""}
                 </button>
               );
             })}

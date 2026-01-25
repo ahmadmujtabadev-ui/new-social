@@ -13,12 +13,12 @@ interface EventOption {
 
 const VendorsPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  
+
   // Get vendors and events from Redux store
   const { vendors, loading: vendorsLoading, currentPage, totalPages } = useAppSelector(
     (state: RootState) => state.dashboard
   );
-  
+
   const { events = [], loading: eventsLoading } = useAppSelector(
     (state: RootState) => state.dashboard
   );
@@ -37,7 +37,7 @@ const VendorsPage: React.FC = () => {
   // Filter only published and active events
   const publishedEvents = useMemo(() => {
     const list = Array.isArray(events) ? events : [];
-    return list.filter((event: any) => 
+    return list.filter((event: any) =>
       event?.status === 'published' && event?.isActive
     );
   }, [events]);
@@ -47,12 +47,12 @@ const VendorsPage: React.FC = () => {
     return publishedEvents
       .map((event: any) => {
         const title = event?.title || 'Untitled Event';
-        const dateTime = event?.eventDateTime 
+        const dateTime = event?.eventDateTime
           ? new Date(event.eventDateTime).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            })
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })
           : '';
         return {
           value: event?._id || '',
@@ -65,7 +65,7 @@ const VendorsPage: React.FC = () => {
   // FRONTEND FILTERING - Filter vendors based on selected event and status
   const filteredVendors = useMemo(() => {
     const list = Array.isArray(vendors) ? vendors : [];
-    
+
     return list.filter((vendor: any) => {
       // Filter by event
       if (selectedEventId) {
@@ -74,12 +74,12 @@ const VendorsPage: React.FC = () => {
           return false;
         }
       }
-      
+
       // Filter by status
       if (filterStatus && vendor?.status !== filterStatus) {
         return false;
       }
-      
+
       return true;
     });
   }, [vendors, selectedEventId, filterStatus]);
@@ -157,19 +157,32 @@ const VendorsPage: React.FC = () => {
             value={selectedEventId}
             onChange={(e) => setSelectedEventId(e.target.value)}
             disabled={isSelectDisabled}
-            className={`w-full px-4 py-2.5 bg-black-900 border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
-              isSelectDisabled ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`w-full px-4 py-2.5 bg-black border border-yellow-500/50 text-yellow-100 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${isSelectDisabled ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            style={{
+              backgroundColor: "#000", // closed select bg
+              color: "#FDE68A", // text-yellow-ish
+            }}
           >
-            <option value="">
+            <option
+              value=""
+              className="bg-black text-yellow-100"
+              style={{ backgroundColor: "#000", color: "#FDE68A" }}
+            >
               {eventsLoading
-                ? 'Loading events...'
+                ? "Loading events..."
                 : eventOptions.length
-                ? 'All Events'
-                : 'No active events available'}
+                  ? "All Events"
+                  : "No active events available"}
             </option>
+
             {eventOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
+              <option
+                key={opt.value}
+                value={opt.value}
+                className="bg-black text-yellow-100"
+                style={{ backgroundColor: "#000", color: "#FDE68A" }}
+              >
                 {opt.label}
               </option>
             ))}
@@ -315,13 +328,12 @@ const VendorsPage: React.FC = () => {
                       <select
                         value={vendor.status}
                         onChange={(e) => handleStatusChange(vendor._id, e.target.value)}
-                        className={`text-sm px-3 py-1 rounded-full cursor-pointer border focus:ring-2 focus:ring-yellow-500 bg-black ${
-                          vendor.status === 'booked'
+                        className={`text-sm px-3 py-1 rounded-full cursor-pointer border focus:ring-2 focus:ring-yellow-500 bg-black ${vendor.status === 'booked'
                             ? 'text-yellow-500 border-yellow-500'
                             : vendor.status === 'confirmed'
-                            ? 'text-green-500 border-green-500'
-                            : 'text-gray-500 border-gray-500'
-                        }`}
+                              ? 'text-green-500 border-green-500'
+                              : 'text-gray-500 border-gray-500'
+                          }`}
                       >
                         <option value="booked">Booked</option>
                         <option value="confirmed">Confirmed</option>

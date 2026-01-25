@@ -17,7 +17,7 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
 }) => {
     const dispatch = useDispatch<AppDispatch>();
     const { events = [] } = useSelector((state: RootState) => state.dashboard);
-    console.log(events)
+    
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         code: '',
@@ -162,32 +162,32 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
     );
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900 border border-yellow-500/30 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+            <div className="bg-zinc-900 border border-yellow-500/30 rounded-lg w-full max-w-4xl my-4 sm:my-8">
+                <div className="p-3 sm:p-4 md:p-6 max-h-[75vh] overflow-y-auto">
                     {/* Header */}
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-yellow-500">
+                    <div className="flex justify-between items-center mb-4 sm:mb-6">
+                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-500">
                             {promo ? 'Edit Promo Code' : 'Create New Promo Code'}
                         </h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-white transition-colors text-2xl"
+                            className="text-gray-400 hover:text-white transition-colors text-2xl sm:text-3xl w-8 h-8 flex items-center justify-center"
                         >
                             ×
                         </button>
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                         {/* Basic Info Section */}
-                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
-                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Basic Information</h3>
+                        <div className="bg-black/50 p-3 sm:p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-3 sm:mb-4">Basic Information</h3>
                             
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {/* Code */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                                         Promo Code *
                                     </label>
                                     <input
@@ -197,7 +197,7 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         onChange={handleChange}
                                         required
                                         placeholder="e.g., SUMMER25"
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 uppercase"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 uppercase"
                                     />
                                     <p className="text-xs text-gray-400 mt-1">
                                         Use uppercase letters and numbers (no spaces)
@@ -206,7 +206,7 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
 
                                 {/* Description */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                                         Description *
                                     </label>
                                     <textarea
@@ -216,20 +216,20 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         required
                                         rows={3}
                                         placeholder="e.g., 25% Early Bird Discount"
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {/* Discount Settings Section */}
-                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
-                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Discount Settings</h3>
+                        <div className="bg-black/50 p-3 sm:p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-3 sm:mb-4">Discount Settings</h3>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                 {/* Discount Type */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                                         Discount Type *
                                     </label>
                                     <select
@@ -237,7 +237,7 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         value={formData.discountType}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     >
                                         <option value="percent">Percentage (%)</option>
                                         <option value="flat">Flat Amount ($)</option>
@@ -246,7 +246,7 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
 
                                 {/* Discount Value */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                                         Discount Value *
                                     </label>
                                     <input
@@ -259,14 +259,14 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         step={formData.discountType === 'percent' ? '1' : '0.01'}
                                         max={formData.discountType === 'percent' ? '100' : undefined}
                                         placeholder={formData.discountType === 'percent' ? '25' : '50.00'}
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     />
                                 </div>
 
                                 {/* Max Discount Cap */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Max Discount Cap (Optional)
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
+                                        Max Discount Cap
                                     </label>
                                     <input
                                         type="number"
@@ -276,17 +276,17 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         min="0"
                                         step="0.01"
                                         placeholder="e.g., 100"
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     />
                                     <p className="text-xs text-gray-400 mt-1">
-                                        Maximum discount amount for % discounts
+                                        Max amount for % discounts
                                     </p>
                                 </div>
 
                                 {/* Min Purchase */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Min Purchase Amount (Optional)
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
+                                        Min Purchase
                                     </label>
                                     <input
                                         type="number"
@@ -296,22 +296,22 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         min="0"
                                         step="0.01"
                                         placeholder="e.g., 50"
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     />
                                     <p className="text-xs text-gray-400 mt-1">
-                                        Minimum purchase required to use code
+                                        Min purchase required
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Date Range Section */}
-                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
-                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Validity Period</h3>
+                        <div className="bg-black/50 p-3 sm:p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-3 sm:mb-4">Validity Period</h3>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                                         Start Date *
                                     </label>
                                     <input
@@ -320,12 +320,12 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         value={formData.startDate}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                                         End Date *
                                     </label>
                                     <input
@@ -335,20 +335,20 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         onChange={handleChange}
                                         required
                                         min={formData.startDate}
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {/* Event Scope Section */}
-                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
-                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Event Applicability</h3>
+                        <div className="bg-black/50 p-3 sm:p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-3 sm:mb-4">Event Applicability</h3>
                             
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {/* Promo Scope */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                                         Apply To *
                                     </label>
                                     <select
@@ -356,7 +356,7 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                         value={formData.promoScope}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-black border border-yellow-500/30 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     >
                                         <option value="all">All Events</option>
                                         <option value="specific">Specific Events Only</option>
@@ -366,29 +366,29 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                 {/* Event Selection */}
                                 {formData.promoScope === 'specific' && (
                                     <div>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <label className="block text-sm font-medium text-gray-300">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                                            <label className="block text-xs sm:text-sm font-medium text-gray-300">
                                                 Select Events *
                                             </label>
                                             <div className="flex gap-2">
                                                 <button
                                                     type="button"
                                                     onClick={handleSelectAllEvents}
-                                                    className="text-xs px-3 py-1 bg-yellow-900/50 text-yellow-400 border border-yellow-500/30 rounded hover:bg-yellow-900/70 transition-colors"
+                                                    className="text-xs px-2 sm:px-3 py-1 bg-yellow-900/50 text-yellow-400 border border-yellow-500/30 rounded hover:bg-yellow-900/70 transition-colors"
                                                 >
                                                     Select All
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={handleDeselectAllEvents}
-                                                    className="text-xs px-3 py-1 bg-zinc-800 text-gray-400 border border-gray-500/30 rounded hover:bg-zinc-700 transition-colors"
+                                                    className="text-xs px-2 sm:px-3 py-1 bg-zinc-800 text-gray-400 border border-gray-500/30 rounded hover:bg-zinc-700 transition-colors"
                                                 >
                                                     Clear All
                                                 </button>
                                             </div>
                                         </div>
                                         
-                                        <div className="max-h-64 overflow-y-auto border border-yellow-500/30 rounded-lg p-2 bg-black">
+                                        <div className="max-h-48 sm:max-h-64 overflow-y-auto border border-yellow-500/30 rounded-lg p-2 bg-black">
                                             {availableEvents && availableEvents.length > 0 ? (
                                                 <div className="space-y-2">
                                                     {availableEvents.map((event: any) => {
@@ -399,17 +399,17 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                                         return (
                                                             <div 
                                                                 key={eventId}
-                                                                className="flex items-center gap-3 p-3 hover:bg-yellow-900/20 rounded cursor-pointer transition-colors"
+                                                                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 hover:bg-yellow-900/20 rounded cursor-pointer transition-colors"
                                                                 onClick={() => handleEventToggle(eventId)}
                                                             >
                                                                 <input
                                                                     type="checkbox"
                                                                     checked={formData.applicableEvents.includes(eventId)}
                                                                     onChange={() => handleEventToggle(eventId)}
-                                                                    className="w-5 h-5 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500"
+                                                                    className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500 flex-shrink-0"
                                                                 />
-                                                                <div className="flex-1">
-                                                                    <div className="text-white font-medium">{eventLabel}</div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="text-white font-medium text-sm sm:text-base truncate">{eventLabel}</div>
                                                                     {eventDate && (
                                                                         <div className="text-xs text-gray-400">
                                                                             📅 {eventDate}
@@ -421,9 +421,9 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                                                     })}
                                                 </div>
                                             ) : (
-                                                <div className="text-center py-8 text-gray-400">
-                                                    <div className="text-4xl mb-2">📅</div>
-                                                    <p>No active events available.</p>
+                                                <div className="text-center py-6 sm:py-8 text-gray-400">
+                                                    <div className="text-3xl sm:text-4xl mb-2">📅</div>
+                                                    <p className="text-sm">No active events available.</p>
                                                     <p className="text-xs mt-1">Create and publish events first.</p>
                                                 </div>
                                             )}
@@ -440,36 +440,36 @@ const PromoCodeDetailsModal: React.FC<PromoCodeDetailsModalProps> = ({
                         </div>
 
                         {/* Status Section */}
-                        <div className="bg-black/50 p-4 rounded-lg border border-yellow-500/20">
-                            <h3 className="text-lg font-semibold text-yellow-400 mb-4">Status</h3>
+                        <div className="bg-black/50 p-3 sm:p-4 rounded-lg border border-yellow-500/20">
+                            <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-3 sm:mb-4">Status</h3>
                             
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 <input
                                     type="checkbox"
                                     name="isActive"
                                     checked={formData.isActive}
                                     onChange={handleChange}
-                                    className="w-5 h-5 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 bg-black border-yellow-500/30 rounded focus:ring-yellow-500 flex-shrink-0"
                                 />
-                                <label className="text-sm font-medium text-gray-300">
+                                <label className="text-xs sm:text-sm font-medium text-gray-300">
                                     Active (Users can use this code)
                                 </label>
                             </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-3 pt-4">
+                        <div className="flex flex-col sm:flex-row gap-3 pt-4">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white border border-yellow-500/30 rounded-lg transition-colors font-medium"
+                                className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-zinc-800 hover:bg-zinc-700 text-white border border-yellow-500/30 rounded-lg transition-colors font-medium"
                                 disabled={loading}
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                className="flex-1 px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={loading}
                             >
                                 {loading ? 'Saving...' : promo ? 'Update Promo Code' : 'Create Promo Code'}
